@@ -524,6 +524,7 @@ const sfx={
    ===================================================================== */
 let peer=null,isHost=false,hostConn=null,conns={},roster={},myId=null,room='',pick=null;
 let localStream=null,micOK=false,calls={},auds={},ana={},joining=false;
+let micErr='', vfail={}, vst={}, vlv={}, vby={};
 const MAX_PLAYERS=11,MAX_JURY=8;
 // STUN y TURN configurados con tus credenciales de Metered.ca
 const ICE = {
