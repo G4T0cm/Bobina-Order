@@ -234,35 +234,31 @@ const darkWood=M(0x4a2c1a,{roughness:.55,map:woodTex(22,45,22,[1,1],6)});
 const lightWood=M(0x8a5a3c,{roughness:.45,map:woodTex(28,42,34,[1,1],6)});
 
 /* ---------- Sala ---------- */
-const RZ=3,RL=30; // centro z y largo de la sala (de -12 a 18)
+const RZ=3,RL=30;
 mk(new THREE.PlaneGeometry(30,RL),M(0xffffff,{map:woodTex(26,48,30,[5,5]),roughness:.38,metalness:.05}),0,0,RZ,scene,false,true).rotation.x=-Math.PI/2;
 const rug=mk(new THREE.PlaneGeometry(5.2,23.5),M(0xffffff,{map:rugTex,roughness:1}),0,.02,5.25,scene,false,true);rug.rotation.x=-Math.PI/2;
 const ceil=mk(new THREE.PlaneGeometry(30,RL),M(0x2a1a38,{roughness:1}),0,9,RZ,scene,false,false);ceil.rotation.x=Math.PI/2;
 for(let z=-9;z<=15;z+=6)B(30,.45,.6,darkWood,0,8.75,z,scene,false,false);
-// Paredes
 const wallM=rx=>M(0xffffff,{map:paperTex(rx,2),roughness:.95});
 mk(new THREE.PlaneGeometry(30,9),wallM(6),0,4.5,-12,scene,false,true);
 const wl=mk(new THREE.PlaneGeometry(RL,9),wallM(6),-15,4.5,RZ,scene,false,true);wl.rotation.y=Math.PI/2;
 const wr=mk(new THREE.PlaneGeometry(RL,9),wallM(6),15,4.5,RZ,scene,false,true);wr.rotation.y=-Math.PI/2;
 const wain=M(0xffffff,{map:panelTex,roughness:.6});
-function trim(w,d,x,z){ // zócalo + friso + moldura superior
+function trim(w,d,x,z){
   const mat=wain.clone();mat.map=panelTex.clone();mat.map.needsUpdate=true;mat.map.wrapS=mat.map.wrapT=THREE.RepeatWrapping;mat.map.repeat.set(Math.max(w,d)/3,1);
   B(w,3.2,d,mat,x,1.6,z,scene,false,true);
   B(w+.1,.16,d+.1,gold,x,3.28,z,scene,false,false);
   B(w+.1,.3,d+.1,gold,x,8.85,z,scene,false,false);
 }
 trim(30,.3,0,-11.85);trim(.3,RL,-14.85,RZ);trim(.3,RL,14.85,RZ);
-// Columnas
 [-12,12].forEach(x=>{
   mk(CY(.62,.62,8.6,20),M(0xe8dcc0,{roughness:.6}),x,4.3,-11.4);
   B(1.6,.5,1.6,M(0xd8cba8),x,.25,-11.4);B(1.6,.45,1.6,M(0xd8cba8),x,8.55,-11.4);
   for(let i=0;i<10;i++){const a=i/10*Math.PI*2;mk(CY(.05,.05,8.2,6),M(0xcbbf9c),x+Math.cos(a)*.6,4.3,-11.4+Math.sin(a)*.6,scene,false,false)}
-  // aplique con luz
   const lampX=x>0?x-1.9:x+1.9;
   mk(SP(.22,12,10),new THREE.MeshBasicMaterial({color:0xffd27a}),lampX,4.6,-11.6,scene,false,false);
   const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffb347,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.7}));gl.position.set(lampX,4.6,-11.4);gl.scale.set(2.4,2.4,1);scene.add(gl);
 });
-// Sello de la justicia
 const sealTex=ctex(512,512,(g,w,h)=>{
   const gr=g.createRadialGradient(256,256,20,256,256,250);gr.addColorStop(0,'#ffe58a');gr.addColorStop(1,'#c4902a');
   g.fillStyle=gr;g.beginPath();g.arc(256,256,248,0,7);g.fill();
@@ -274,7 +270,6 @@ const sealTex=ctex(512,512,(g,w,h)=>{
   g.font='64px serif';g.textAlign='center';g.fillStyle='#4a2f08';g.fillText('🧦',256,478);
 });
 const seal=mk(new THREE.CircleGeometry(1.9,48),new THREE.MeshStandardMaterial({map:sealTex,roughness:.35,metalness:.6}),0,6.9,-11.7,scene,false,false);
-// Estandartes
 function banner3D(x){
   const t=ctex(256,512,(g,w,h)=>{
     g.fillStyle='#6a1b9a';g.fillRect(0,0,w,h);
@@ -285,7 +280,6 @@ function banner3D(x){
   mk(CY(.05,.05,2.1,8),gold,x,8,-11.7,scene,false,false).rotation.z=Math.PI/2;
 }
 banner3D(-7);banner3D(7);
-// Ventanas nocturnas (pared derecha) + haces de luz
 const skyTex=ctex(256,512,(g,w,h)=>{
   const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#0c1236');gr.addColorStop(1,'#33407a');g.fillStyle=gr;g.fillRect(0,0,w,h);
   for(let i=0;i<60;i++){g.fillStyle=`rgba(255,255,255,${rnd(.3,1)})`;g.fillRect(rnd(0,w),rnd(0,h*.8),rnd(1,2.5),rnd(1,2.5))}
@@ -302,7 +296,6 @@ const shafts=[];
   const sh=new THREE.Mesh(new THREE.PlaneGeometry(2.3,10),new THREE.MeshBasicMaterial({map:shaftTex,transparent:true,opacity:.16,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
   sh.position.set(11.4,4.4,z);sh.rotation.z=-.62;scene.add(sh);shafts.push(sh);
 });
-// Cuadros en la pared izquierda
 [-6,2,10].forEach((z,i)=>{
   const t=ctex(256,320,(g,w,h)=>{
     const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,['#3a5a8c','#8c3a5a','#3a8c6a'][i]);gr.addColorStop(1,'#1c1230');g.fillStyle=gr;g.fillRect(0,0,w,h);
@@ -312,7 +305,6 @@ const shafts=[];
   const p=mk(new THREE.PlaneGeometry(2.1,2.7),new THREE.MeshStandardMaterial({map:t,roughness:.7}),-14.6,5.6,z,scene,false,false);p.rotation.y=Math.PI/2;
   B(.2,3.0,2.4,gold,-14.72,5.6,z,scene,false,false);
 });
-// Lámparas de araña
 const candleLights=[];
 function chandelier(x,z,light){
   const g=new THREE.Group();g.position.set(x,7.0,z);scene.add(g);
@@ -329,8 +321,6 @@ function chandelier(x,z,light){
 }
 chandelier(-5,-3,true);chandelier(5,-3,true);chandelier(0,9,false);chandelier(0,3,false);
 
-/* ---------- Mobiliario ---------- */
-// Estrado del juez
 B(7,1.8,2.4,darkWood,0,.9,-8);B(7.4,.2,2.8,lightWood,0,1.9,-8);
 B(7.8,.18,.9,lightWood,0,.09,-6.4);B(7.5,.14,.5,lightWood,0,.25,-6.8);
 B(1.8,.14,.04,gold,0,1.1,-6.78);
@@ -339,7 +329,6 @@ mk(new THREE.TorusGeometry(.12,.05,6,12),gold,0,5.0,-9.15,scene,false,false);
 [-.8,0,.8].forEach(x=>[3,3.6,4.2].forEach(y=>mk(SP(.05,8,6),gold,x,y,-9.15,scene,false,false)));
 B(.9,.18,.35,M(0x1a1226,{roughness:.4}),-1.9,2.1,-7.3);
 mk(CY(.2,.25,.15,16),M(0x2a1608),.95,2.0,-7.2);
-// Mesas de abogados
 function lawTable(x){
   B(3.4,1.1,1.2,darkWood,x,.55,1.6);B(3.7,.14,1.5,lightWood,x,1.15,1.6);
   B(.55,.06,.7,M(0xf4efe6),x-.8,1.25,1.6,scene,true,false);B(.5,.05,.65,M(0xe8e1d2),x-.75,1.31,1.55,scene,true,false);
@@ -348,14 +337,12 @@ function lawTable(x){
   mk(SP(.17,12,8),M(0xffe9a8,{emissive:lin(0xffd27a),emissiveIntensity:1.2}),x+1.1,1.78,1.4,scene,false,false).scale.y=.8;
 }
 lawTable(-5);lawTable(5);
-B(.9,.6,.14,M(0x3a2212,{roughness:.5}),-6.6,1.55,1.7);B(.9,.04,.1,gold,-6.6,1.86,1.7,scene,false,false); // maletín
-// Palco del jurado
+B(.9,.6,.14,M(0x3a2212,{roughness:.5}),-6.6,1.55,1.7);B(.9,.04,.1,gold,-6.6,1.86,1.7,scene,false,false);
 B(3,.5,10,lightWood,-12.3,.25,-1.75);
 B(.3,.7,9.8,darkWood,-10.6,.85,-1.75);B(.35,.12,10.1,lightWood,-10.6,1.25,-1.75);
 for(let i=0;i<22;i++)mk(CY(.05,.05,.45,8),darkWood,-10.6,.97,-6.4+i*.45,scene,false,false);
 B(.3,2.6,10,darkWood,-13.7,1.8,-1.75);
 for(let i=0;i<6;i++)B(1.3,.14,1.2,M(0x7a1830,{roughness:.8}),-12.7,.57,-5.5+i*1.5,scene,false,true);
-// Pizarra de pruebas
 const bc=document.createElement('canvas');bc.width=800;bc.height=450;
 const bctx=bc.getContext('2d'),btex=new THREE.CanvasTexture(bc);btex.encoding=THREE.sRGBEncoding;btex.anisotropy=8;
 const board=new THREE.Mesh(new THREE.PlaneGeometry(4.8,2.7),new THREE.MeshBasicMaterial({map:btex,toneMapped:false}));
@@ -371,7 +358,6 @@ function drawCard(a,b,c='#ffd23f'){
   g.font='bold 36px sans-serif';g.fillText(b.slice(0,38),400,296);
   btex.needsUpdate=true;board.material.map=btex;board.material.needsUpdate=true;
 }
-// Público
 const audience=[];
 [8.5,11].forEach((z,row)=>[-1,1].forEach(sd=>{
   B(7,.5,.9,lightWood,sd*6.2,.45,z);B(7,1.0,.15,darkWood,sd*6.2,1.1,z+.5);
@@ -382,16 +368,12 @@ const audience=[];
     s.position.set(sd*6.2-2.4+i*1.6,.7,z);s.rotation.y=Math.PI+rnd(-.25,.25);s.userData.ph=Math.random()*6;scene.add(s);audience.push(s);
   }
 }));
-// Polvo en suspensión
 const dN=220,dPos=new Float32Array(dN*3);
 for(let i=0;i<dN;i++){dPos[i*3]=rnd(-14,14);dPos[i*3+1]=rnd(.5,8.5);dPos[i*3+2]=rnd(-11,17)}
 const dGeo=new THREE.BufferGeometry();dGeo.setAttribute('position',new THREE.BufferAttribute(dPos,3));
 const dust=new THREE.Points(dGeo,new THREE.PointsMaterial({map:glowTex,color:0xffe9c0,size:.14,transparent:true,opacity:.5,depthWrite:false,blending:THREE.AdditiveBlending}));
 scene.add(dust);
 
-/* =====================================================================
-   CALCETINES · personajes
-   ===================================================================== */
 function numTex(n){return ctex(64,64,g=>{g.fillStyle='#ffd23f';g.fillRect(0,0,64,64);g.fillStyle='#1a1226';g.font='700 44px Bangers,Impact,sans-serif';g.textAlign='center';g.fillText(n,32,48)},null)}
 function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
   const g=new THREE.Group(),u=g.userData;
@@ -405,7 +387,6 @@ function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
   u.lv=0;u.alv=0;u.blink=rnd(1,4);u.ph=Math.random()*6;
   if(lite){g.scale.setScalar(s);return g}
   [-.25,.25].forEach(x=>mk(SP(.2,14,10),M(col2,{roughness:.9}),x,.1,.52,g).scale.set(1,.55,1.5));
-  // Cara
   u.eyes=[];u.brows=[];
   [-1,1].forEach(sd=>{
     const eg=new THREE.Group();eg.position.set(sd*.2,1.55,.43);g.add(eg);
@@ -422,7 +403,6 @@ function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
   mk(SP(.12,10,8),M(0xff7a8a),0,-.09,.04,mo,false,false).scale.set(1.2,.6,.5);
   mk(new THREE.BoxGeometry(.26,.06,.04),M(0xffffff),0,.13,.08,mo,false,false);
   u.mouth=mo;g.mouth=mo;
-  // Brazos
   const aM=acc==='juez'?M(0x15151f,{roughness:.7}):body;
   u.arms=[-1,1].map(sd=>{
     const a=new THREE.Group();a.position.set(sd*.52,1.0,.1);g.add(a);
@@ -430,7 +410,6 @@ function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
     if(acc==='acusado')mk(new THREE.TorusGeometry(.13,.025,6,12),M(0xbbbbbb,{metalness:.9,roughness:.3}),0,-.5,0,a).rotation.x=Math.PI/2;
     return a;
   });
-  // Complementos
   if(acc==='juez'){
     mk(CY(.6,.7,1.15,28),M(0x15151f,{roughness:.75}),0,.65,0,g);
     mk(new THREE.TorusGeometry(.62,.03,6,28),gold,0,1.22,0,g,false,false).rotation.x=Math.PI/2;
@@ -457,7 +436,6 @@ function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
   return g;
 }
 
-/* ---------- Actores y focos ---------- */
 const A={};
 function actor(id,sks,cm,look,head,sp){
   const sl=new THREE.SpotLight(0xfff0c0,0,45,sp,.6,1);
@@ -481,7 +459,6 @@ const jc=[0x4fd18b,0xc77dff,0xffd23f,0x5cc8ff,0xff7a8a,0xa3e635,0xff9f43,0x7f8cf
 jc.forEach((c,i)=>{const s=sock(c,'jurado',.9,[0xe23b4e,0x2f7de1][i%2],i);s.position.set(-12.3,.5,-5.6+i*1.2);s.rotation.y=Math.PI/2+.25;jury.push(s)});
 actor('jurado',jury,[-4.5,3.4,5],[-12.3,2,-1.75],[-12.3,2.9,-1.75],.55);
 
-/* Indicador "tiene la palabra" */
 const ic=document.createElement('canvas');ic.width=360;ic.height=96;
 const ix=ic.getContext('2d');
 ix.fillStyle='#ffd23f';ix.strokeStyle='#1a1226';ix.lineWidth=8;ix.fillRect(6,6,348,84);ix.strokeRect(6,6,348,84);
@@ -491,7 +468,7 @@ const ind=new THREE.Sprite(new THREE.SpriteMaterial({map:indTex,depthTest:false,
 ind.scale.set(3.6,.96,1);ind.renderOrder=9;ind.visible=false;scene.add(ind);
 
 /* =====================================================================
-   SONIDO (solo efectos; sin voces sintéticas)
+   SONIDO
    ===================================================================== */
 let AC;
 const ac=()=>{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC};
@@ -520,29 +497,30 @@ const sfx={
 };
 
 /* =====================================================================
-   VOZ · micrófono, WebRTC (PeerJS) y análisis de nivel
+   VOZ · Dinámica con Metered API Key y PeerJS
    ===================================================================== */
 let peer=null,isHost=false,hostConn=null,conns={},roster={},myId=null,room='',pick=null;
 let localStream=null,micOK=false,calls={},auds={},ana={},joining=false;
 let micErr='', vfail={}, vst={}, vlv={}, vby={};
 const MAX_PLAYERS=11,MAX_JURY=8;
-// STUN y TURN configurados con tus credenciales de Metered.ca
-const ICE = {
-  iceServers: [
-    { urls: ['stun:stun.l.google.com:19302', 'stun:stun.relay.metered.ca:80'] },
-    { 
-      urls: [
-        'turn:global.relay.metered.ca:80',
-        'turn:global.relay.metered.ca:80?transport=tcp',
-        'turn:global.relay.metered.ca:443',
-        'turns:global.relay.metered.ca:443?transport=tcp'
-      ], 
-      username: 'dd75ad9634f8e6ed36f422c3', 
-      credential: 'GVtRV8TsFqHYzHuQ' 
-    }
-  ],
+
+let ICE = {
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
   iceCandidatePoolSize: 4
 };
+
+async function loadTurnCredentials() {
+  try {
+    const res = await fetch("https://bobina.metered.live/api/v1/turn/credentials?apiKey=e67a375c5a22ce89a25d25963b3799b69602");
+    const iceServers = await res.json();
+    ICE = {
+      iceServers: iceServers,
+      iceCandidatePoolSize: 4
+    };
+  } catch (e) {
+    console.warn("No se pudieron cargar los servidores TURN dinámicos, usando STUN por defecto.", e);
+  }
+}
 
 async function getMic(){
   try{
@@ -551,7 +529,7 @@ async function getMic(){
     micOK=true;
     watch('__me',localStream);
   }catch(e){
-    micErr=(e&&e.name)||'';micOK=false;localStream=ac().createMediaStreamDestination().stream; // pista silenciosa para poder escuchar igualmente
+    micErr=(e&&e.name)||'';micOK=false;localStream=ac().createMediaStreamDestination().stream;
   }
 }
 const canTalk=()=>!!me&&(over||me==='juez'||turn===me);
@@ -696,7 +674,6 @@ function clientData(m){
   if(m.t==='welcome'){
     clearTimeout(joinFail.to);joining=false;
     roster=m.roster||{};myId=peer.id;
-    // Conexión secuencial segura para evitar congelamientos al entrar
     Object.keys(roster).forEach((id, idx)=>{
       if(id!==myId && !calls[id]) {
         setTimeout(()=>callPeer(id), idx * 300);
@@ -707,7 +684,6 @@ function clientData(m){
   if(m.t==='roster'){
     const old=Object.keys(roster);roster=m.roster||{};
     old.forEach(id=>{if(!roster[id])dropAudio(id)});
-    // Llamar únicamente a los nuevos miembros que no tengan llamada activa
     Object.keys(roster).forEach(id=>{
       if(id!==myId && !calls[id] && !auds[id]) callPeer(id);
     });
@@ -729,7 +705,9 @@ function joinFail(msg){
 }
 async function createRoom(){
   if(!pick)return lobbyMsg('Primero elige un papel.');
-  setBusy(true);lobbyMsg('Pidiendo micrófono…');
+  setBusy(true);lobbyMsg('Conectando con servidor TURN…');
+  await loadTurnCredentials();
+  lobbyMsg('Pidiendo micrófono…');
   try{ac()}catch(e){}
   await getMic();
   lobbyMsg('Creando sala…');
@@ -747,7 +725,9 @@ async function joinRoom(){
   if(!pick)return lobbyMsg('Primero elige un papel.');
   const code=$('#code').value.trim().toUpperCase();
   if(!/^[A-Z0-9]{5}$/.test(code))return lobbyMsg('El código tiene 5 letras o números.');
-  setBusy(true);lobbyMsg('Pidiendo micrófono…');
+  setBusy(true);lobbyMsg('Conectando con servidor TURN…');
+  await loadTurnCredentials();
+  lobbyMsg('Pidiendo micrófono…');
   try{ac()}catch(e){}
   await getMic();
   lobbyMsg('Buscando sala…');joining=true;room=code;me=pick;
@@ -947,7 +927,6 @@ function loop(){
   cam.lookAt(cl);
   hemi.intensity+=((hold?.32:.7)-hemi.intensity)*.06;
 
-  // Voz → calcetines
   sampleLevels();
   for(const id in A)A[id].sks.forEach(s=>s.userData.alv=0);
   for(const id in ana){if(id==='__me')continue;const s=sockOf(id);if(s)s.userData.alv=Math.max(s.userData.alv,ana[id].lv)}
@@ -978,14 +957,12 @@ function loop(){
       if(u.sweat){u.sweat.position.y=1.9-((t*.6)%1)*.5;u.sweat.material.opacity=1-((t*.6)%1)}
     });
   }
-  // Público y ambiente
   audience.forEach(s=>{s.position.y=.7+Math.max(0,Math.sin(t*1.4+s.userData.ph))*.04;s.rotation.z=Math.sin(t*.8+s.userData.ph)*.04});
   candleLights.forEach((l,i)=>l.intensity=1.1+Math.sin(t*7+i*3)*.07+Math.sin(t*13+i)*.04);
   shafts.forEach((s,i)=>s.material.opacity=.13+Math.sin(t*.5+i*2)*.04);
   dust.rotation.y=t*.01;dust.position.y=Math.sin(t*.2)*.3;
   const p=(now-gvT)/220;
   gv.rotation.x=p<1?-1+2.2*p:p<2?1.2-1.4*(p-1):-.2;
-  // Indicador del turno
   ind.visible=false;
   if(hold){
     const id=Object.keys(roster).find(k=>roster[k].role===turn),s=id?sockOf(id):null;
