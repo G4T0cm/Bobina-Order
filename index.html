@@ -525,15 +525,16 @@ const sfx={
 let peer=null,isHost=false,hostConn=null,conns={},roster={},myId=null,room='',pick=null;
 let localStream=null,micOK=false,calls={},auds={},ana={},joining=false;
 const MAX_PLAYERS=11,MAX_JURY=8;
-// STUN solo no basta con muchas redes (4G, wifis de empresa/universidad…): hace falta TURN como respaldo.
+// STUN y TURN configurados con tus credenciales de Metered.ca
 const ICE = {
   iceServers: [
-    { urls: ['stun:stun.l.google.com:19302'] },
+    { urls: ['stun:stun.l.google.com:19302', 'stun:stun.relay.metered.ca:80'] },
     { 
       urls: [
-        'turn:TU_SUBDOMINIO.metered.ca:80',
-        'turn:TU_SUBDOMINIO.metered.ca:443?transport=udp',
-        'turn:TU_SUBDOMINIO.metered.ca:443?transport=tcp'
+        'turn:global.relay.metered.ca:80',
+        'turn:global.relay.metered.ca:80?transport=tcp',
+        'turn:global.relay.metered.ca:443',
+        'turns:global.relay.metered.ca:443?transport=tcp'
       ], 
       username: 'dd75ad9634f8e6ed36f422c3', 
       credential: 'GVtRV8TsFqHYzHuQ' 
