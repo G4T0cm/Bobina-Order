@@ -52,23 +52,23 @@ h1{font:400 clamp(34px,8vw,70px) Bangers,Impact,sans-serif;margin:0;color:#ffd23
 #micS.dead{background:#ffd1d5}
 #meterW{height:12px;border:3px solid #1c0b33;border-radius:8px;background:#fff;margin-top:8px;overflow:hidden}
 #meter{height:100%;width:0;background:#2ecc71;transition:width .06s}
-#judgeP{right:10px;bottom:10px;width:270px;max-height:56vh;overflow:auto}
+#judgeP{right:230px;bottom:10px;width:min(460px,calc(100vw - 250px));max-height:calc(100vh - 70px);overflow:auto;resize:both;min-width:300px}
 #judgeP .btn{width:100%;margin:0}
 #judgeP .row .btn{width:auto;flex:1}
 #judgeP input{width:100%}
 #pv{margin-top:8px;padding:8px;background:#fff;border:3px dashed #8e44ff;border-radius:10px}
-#pv img,#pv video,#pv iframe{width:100%;max-height:150px;border:2px solid #1c0b33;border-radius:6px;background:#000;display:block}
+#pv img,#pv video,#pv iframe{width:100%;aspect-ratio:16/9;max-height:300px;object-fit:contain;border:2px solid #1c0b33;border-radius:6px;background:#000;display:block;margin-top:6px}
 #banner{position:fixed;left:50%;top:36%;z-index:9;pointer-events:none;padding:6px 34px;border:6px solid #1c0b33;box-shadow:10px 10px 0 #1c0b33;font:400 clamp(34px,9vw,108px) Bangers,Impact,sans-serif;color:#1c0b33;white-space:nowrap;transform:translate(-50%,-50%) rotate(-4deg);animation:pop .45s cubic-bezier(.2,1.8,.4,1)}
 @keyframes pop{from{transform:translate(-50%,-50%) rotate(-4deg) scale(.15)}}
 @media (prefers-reduced-motion:reduce){#banner{animation:none}}
-@media (max-width:700px){#top{right:10px;top:56px}#side{width:auto;flex-direction:row;flex-wrap:wrap;top:10px}#roster{display:none}#judgeP{width:min(270px,60vw);bottom:150px}#micS{width:min(300px,60vw)}}
+@media (max-width:700px){#top{right:10px;top:56px}#side{width:auto;flex-direction:row;flex-wrap:wrap;top:10px}#roster{display:none}#judgeP{right:10px;width:min(460px,calc(100vw - 20px));bottom:150px;max-height:calc(100vh - 230px)}#micS{width:min(300px,60vw)}}
 </style>
 </head>
 <body>
 <div id="vig"></div>
 
 <div id="intro" class="ui">
-  <h1>TRIBUNAL BOBINA</h1>
+  <h1>☭ TRIBUNAL BOBINA</h1>
   <p id="caseI"></p>
   <b class="step">1 · ¿Qué papel juegas?</b>
   <div class="row" style="justify-content:center">
@@ -87,7 +87,7 @@ h1{font:400 clamp(34px,8vw,70px) Bangers,Impact,sans-serif;margin:0;color:#ffd23
     <button class="btn blue" id="join">🎧 Unirse</button>
   </div>
   <p id="lobbyMsg" role="status"></p>
-  <small>De la Bobina para la Bobina.</small>
+  <small>Juicio 100% por voz. Necesitas micrófono (mejor con auriculares) y abrir la página por HTTPS. Hasta 13 jugadores: 1 Juez, 1 Fiscal con su abogado, 1 Acusado con su abogado y hasta 8 del jurado.</small>
 </div>
 
 <div id="top" class="ui">
@@ -967,7 +967,24 @@ $('#reVoice').onclick=()=>{
   Object.keys(roster).forEach(id=>{if(id!==myId){dropAudio(id);delete vfail[id];callPeer(id)}});
 };
 addEventListener('beforeunload',()=>{try{peer&&peer.destroy()}catch(e){}});
-addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});
+let lastW=0,lastH=0,lastDPR=0;
+function fitRenderer(force){
+  const w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio||1,2);
+  if(!force&&w===lastW&&h===lastH&&d===lastDPR)return;
+  lastW=w;lastH=h;lastDPR=d;
+  ren.setPixelRatio(d);ren.setSize(w,h);
+  cam.aspect=w/h;cam.updateProjectionMatrix();
+}
+addEventListener('resize',()=>fitRenderer(true));
+addEventListener('focus',()=>fitRenderer(true));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)fitRenderer(true)});
+setInterval(()=>fitRenderer(false),400);
+ren.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault()},false);
+ren.domElement.addEventListener('webglcontextrestored',()=>{
+  [btex,sealMat.map,skyTex,knitTex].forEach(t=>{if(t)t.needsUpdate=true});
+  fitRenderer(true);
+},false);
+fitRenderer(true);
 {const h=location.hash.slice(1).toUpperCase();if(/^[A-Z0-9]{5}$/.test(h))$('#code').value=h}
 $('#caseI').textContent='📁 '+CASES[Math.floor(Math.random()*CASES.length)];
 
