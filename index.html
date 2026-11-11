@@ -633,8 +633,8 @@ function netErr(e){
 const lobbyMsg=t=>$('#lobbyMsg').textContent=t||'';
 function genCode(){const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s}
 
-/* ---------- Red: mensajes ---------- */
-const bc_=(m,except)=>{for(const id in conns){if(id!==except&&conns[id].open)try{conns[id].send(m)}catch(e){}}};
+/* ---------- Red: mensajes y WebRTC corregido ---------- */
+const bc_=(m,except)=>{for(const id in conns){if(id!==except&&conns[id]&&conns[id].open)try{conns[id].send(m)}catch(e){}}};
 const snapshot=()=>({turn,over,v:lastVerdict,c:caseIdx,ev:lastEv});
 function rosterOut(){return JSON.parse(JSON.stringify(roster))}
 function emit(a,d={}){
@@ -695,12 +695,21 @@ function clientData(m){
   if(m.t==='welcome'){
     clearTimeout(joinFail.to);joining=false;
     roster=m.roster||{};myId=peer.id;
-    for(const id in roster)if(id!==myId)callPeer(id);
+    // Conexión secuencial segura para evitar congelamientos al entrar
+    Object.keys(roster).forEach((id, idx)=>{
+      if(id!==myId && !calls[id]) {
+        setTimeout(()=>callPeer(id), idx * 300);
+      }
+    });
     enterGame(m.state);return;
   }
   if(m.t==='roster'){
     const old=Object.keys(roster);roster=m.roster||{};
     old.forEach(id=>{if(!roster[id])dropAudio(id)});
+    // Llamar únicamente a los nuevos miembros que no tengan llamada activa
+    Object.keys(roster).forEach(id=>{
+      if(id!==myId && !calls[id] && !auds[id]) callPeer(id);
+    });
     renderRoster();sync();return;
   }
   if(m.t==='do')applyAct(m);
