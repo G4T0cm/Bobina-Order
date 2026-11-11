@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tribunal de Calcetines 3D · Discord</title>
+<title>Tribunal de Calcetines 3D · Voz</title>
 <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
@@ -37,19 +37,21 @@ h1{font:400 clamp(36px,8vw,72px) Bangers,Impact,sans-serif;margin:0;color:#ffd23
 .rr{display:flex;gap:6px;align-items:center;font-weight:700;margin-top:5px;font-size:14px}
 .dot{width:11px;height:11px;border-radius:50%;background:#bbb;border:2px solid #1a1226;flex:none}
 .rr.spk .dot{background:#2ecc71;box-shadow:0 0 10px #2ecc71}
-.rr.linked .dot{background:#5cc8ff}
-.rr.voice .dot{background:#2ecc71}
+.rr.pend::after{content:'⏳ conectando';font-size:11px;opacity:.7;font-weight:400}
+.rr.fail::after{content:'❌ sin voz';font-size:11px;color:#c2233a}
 #evBox small{display:block;margin:6px 0;font-weight:400}
 #evBox input{width:100%}
 #viewer{left:10px;top:112px;width:min(360px,92vw)}
 #viewer iframe,#viewer video,#viewer img{width:100%;max-height:220px;aspect-ratio:16/9;object-fit:contain;border:3px solid #1a1226;border-radius:8px;background:#000;display:block}
 #viewer a{color:#c2233a}
 #vx{float:right;padding:0 8px;font-size:16px}
-#micS{left:10px;bottom:10px;width:min(360px,92vw);font-size:16px}
+#micS{left:10px;bottom:10px;width:min(340px,92vw);font-size:16px}
 #micS .big{font:400 24px Bangers,Impact,sans-serif;letter-spacing:1px;display:block}
 #micS.open{background:#c9f7de}
 #micS.closed{background:#e6e0ef}
 #micS.dead{background:#ffd1d5}
+#meterW{height:12px;border:3px solid #1a1226;border-radius:8px;background:#fff;margin-top:8px;overflow:hidden}
+#meter{height:100%;width:0;background:#2ecc71;transition:width .06s}
 #judgeP{right:10px;bottom:10px;width:230px}
 #judgeP .btn{width:100%;margin:0}
 #judgeP .row{margin-top:8px}
@@ -57,9 +59,6 @@ h1{font:400 clamp(36px,8vw,72px) Bangers,Impact,sans-serif;margin:0;color:#ffd23
 @keyframes pop{from{transform:translate(-50%,-50%) rotate(-4deg) scale(.15)}}
 @media (prefers-reduced-motion:reduce){#banner{animation:none}}
 @media (max-width:700px){#top{right:10px;top:56px}#side{width:auto;flex-direction:row;flex-wrap:wrap;top:10px}#roster{display:none}#viewer{top:150px}#judgeP{width:auto;left:10px;bottom:110px}#micS{width:min(300px,60vw)}}
-#linkBox{background:#1a1226;color:#ffd23f;padding:10px 14px;border-radius:10px;margin-top:12px;font-size:15px;max-width:420px}
-#linkBox code{background:#ffd23f;color:#1a1226;padding:2px 8px;border-radius:6px;font-weight:700;letter-spacing:1px}
-#chanLink{display:block;margin-top:6px;color:#5cc8ff}
 </style>
 </head>
 <body>
@@ -73,9 +72,9 @@ h1{font:400 clamp(36px,8vw,72px) Bangers,Impact,sans-serif;margin:0;color:#ffd23
     <button class="btn pick" data-r="juez">👨‍⚖️ Juez</button>
     <button class="btn pick blue" data-r="fiscal">🧦 Fiscal</button>
     <button class="btn pick red" data-r="acusado">🙈 Acusado</button>
-    <button class="btn pick green" data-r="jurado" title="Puede haber varios jurados">👥 Jurado (varios)</button>
+    <button class="btn pick green" data-r="jurado" title="Puede haber varios jurados en la misma sala">👥 Jurado (varios)</button>
   </div>
-  <b class="step">2 · Sala de juicio</b>
+  <b class="step">2 · Sala de voz</b>
   <div class="row" style="justify-content:center;align-items:center">
     <button class="btn green" id="create">🆕 Crear sala</button>
     <span style="color:#fff">o</span>
@@ -83,7 +82,7 @@ h1{font:400 clamp(36px,8vw,72px) Bangers,Impact,sans-serif;margin:0;color:#ffd23
     <button class="btn blue" id="join">🎧 Unirse</button>
   </div>
   <p id="lobbyMsg" role="status"></p>
-  <small>La voz se hace en Discord. Tras entrar verás un código de 6 caracteres: escribe <b>/yo CÓDIGO</b> en Discord y únete al canal de voz del juicio. Solo habla quien tenga la palabra (la concede el Juez).</small>
+  <small>Juicio 100% por voz: no hay chat ni voces sintéticas. Solo habla quien tenga la palabra, y la concede el Juez. Necesitas micrófono (mejor con auriculares) y abrir la página por HTTPS. Hasta 11 jugadores por sala: 1 Juez, 1 Fiscal, 1 Acusado y hasta 8 del jurado.</small>
 </div>
 
 <div id="top" class="ui">
@@ -110,7 +109,9 @@ h1{font:400 clamp(36px,8vw,72px) Bangers,Impact,sans-serif;margin:0;color:#ffd23
 <div id="micS" class="ui card closed">
   <span class="big" id="micT"></span>
   <span id="micD"></span>
-  <div id="linkInfo" style="margin-top:8px;font-size:13px;font-weight:400"></div>
+  <span id="micC" style="display:block;font-size:13px;margin-top:4px;font-weight:400"></span>
+  <div id="meterW"><div id="meter"></div></div>
+  <div class="row"><button class="btn tag" id="selfMute">🎙️ Silenciarme</button><button class="btn tag blue" id="reVoice" title="Volver a conectar el audio con los demás">🔄 Reconectar voz</button></div>
 </div>
 
 <div id="judgeP" class="ui card hidden">
@@ -123,20 +124,16 @@ h1{font:400 clamp(36px,8vw,72px) Bangers,Impact,sans-serif;margin:0;color:#ffd23
 <div id="banner" class="hidden"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script>
-/* ========== CONFIGURACIÓN ========== */
-const WS_URL = "ws://paid1.daki.cc:4073/ws";
-/* ================================== */
-
 const $=s=>document.querySelector(s);
 const R={juez:'Juez',fiscal:'Fiscal',acusado:'Acusado',jurado:'Jurado'};
 const ICON={juez:'👨‍⚖️',fiscal:'🧦',acusado:'🙈',jurado:'👥'};
 const CASES=['El Calcetín Desparejado contra la Lavadora Fugitiva','El Pueblo contra el Sr. Pie Izquierdo: el robo del último croissant','La Fiscalía contra Sandalia Pérez: ¡calzar con calcetín sin permiso!','Caso 404: el misterio del calcetín perdido en el secador'];
-let me=null,turn=null,over=false,mute=false,camOv=null,talk={},nEv=0,caseIdx=0,lastEv=null,lastVerdict=null;
-let ws=null,myPid=null,room='',pick=null,myLink='',chanInfo=null,roster={},owner=null;
+let me=null,turn=null,over=false,mute=false,selfMute=false,camOv=null,talk={},nEv=0,caseIdx=0,lastEv=null,lastVerdict=null;
 
 /* =====================================================================
-   ESCENA 3D (igual que antes)
+   ESCENA · render, luces y texturas procedurales
    ===================================================================== */
 const lin=h=>new THREE.Color(h).convertSRGBToLinear();
 const scene=new THREE.Scene();
@@ -236,31 +233,36 @@ const gold=M(0xd9a932,{roughness:.3,metalness:.85});
 const darkWood=M(0x4a2c1a,{roughness:.55,map:woodTex(22,45,22,[1,1],6)});
 const lightWood=M(0x8a5a3c,{roughness:.45,map:woodTex(28,42,34,[1,1],6)});
 
-const RZ=3,RL=30;
+/* ---------- Sala ---------- */
+const RZ=3,RL=30; // centro z y largo de la sala (de -12 a 18)
 mk(new THREE.PlaneGeometry(30,RL),M(0xffffff,{map:woodTex(26,48,30,[5,5]),roughness:.38,metalness:.05}),0,0,RZ,scene,false,true).rotation.x=-Math.PI/2;
 const rug=mk(new THREE.PlaneGeometry(5.2,23.5),M(0xffffff,{map:rugTex,roughness:1}),0,.02,5.25,scene,false,true);rug.rotation.x=-Math.PI/2;
 const ceil=mk(new THREE.PlaneGeometry(30,RL),M(0x2a1a38,{roughness:1}),0,9,RZ,scene,false,false);ceil.rotation.x=Math.PI/2;
 for(let z=-9;z<=15;z+=6)B(30,.45,.6,darkWood,0,8.75,z,scene,false,false);
+// Paredes
 const wallM=rx=>M(0xffffff,{map:paperTex(rx,2),roughness:.95});
 mk(new THREE.PlaneGeometry(30,9),wallM(6),0,4.5,-12,scene,false,true);
 const wl=mk(new THREE.PlaneGeometry(RL,9),wallM(6),-15,4.5,RZ,scene,false,true);wl.rotation.y=Math.PI/2;
 const wr=mk(new THREE.PlaneGeometry(RL,9),wallM(6),15,4.5,RZ,scene,false,true);wr.rotation.y=-Math.PI/2;
 const wain=M(0xffffff,{map:panelTex,roughness:.6});
-function trim(w,d,x,z){
+function trim(w,d,x,z){ // zócalo + friso + moldura superior
   const mat=wain.clone();mat.map=panelTex.clone();mat.map.needsUpdate=true;mat.map.wrapS=mat.map.wrapT=THREE.RepeatWrapping;mat.map.repeat.set(Math.max(w,d)/3,1);
   B(w,3.2,d,mat,x,1.6,z,scene,false,true);
   B(w+.1,.16,d+.1,gold,x,3.28,z,scene,false,false);
   B(w+.1,.3,d+.1,gold,x,8.85,z,scene,false,false);
 }
 trim(30,.3,0,-11.85);trim(.3,RL,-14.85,RZ);trim(.3,RL,14.85,RZ);
+// Columnas
 [-12,12].forEach(x=>{
   mk(CY(.62,.62,8.6,20),M(0xe8dcc0,{roughness:.6}),x,4.3,-11.4);
   B(1.6,.5,1.6,M(0xd8cba8),x,.25,-11.4);B(1.6,.45,1.6,M(0xd8cba8),x,8.55,-11.4);
   for(let i=0;i<10;i++){const a=i/10*Math.PI*2;mk(CY(.05,.05,8.2,6),M(0xcbbf9c),x+Math.cos(a)*.6,4.3,-11.4+Math.sin(a)*.6,scene,false,false)}
+  // aplique con luz
   const lampX=x>0?x-1.9:x+1.9;
   mk(SP(.22,12,10),new THREE.MeshBasicMaterial({color:0xffd27a}),lampX,4.6,-11.6,scene,false,false);
   const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffb347,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.7}));gl.position.set(lampX,4.6,-11.4);gl.scale.set(2.4,2.4,1);scene.add(gl);
 });
+// Sello de la justicia
 const sealTex=ctex(512,512,(g,w,h)=>{
   const gr=g.createRadialGradient(256,256,20,256,256,250);gr.addColorStop(0,'#ffe58a');gr.addColorStop(1,'#c4902a');
   g.fillStyle=gr;g.beginPath();g.arc(256,256,248,0,7);g.fill();
@@ -272,6 +274,7 @@ const sealTex=ctex(512,512,(g,w,h)=>{
   g.font='64px serif';g.textAlign='center';g.fillStyle='#4a2f08';g.fillText('🧦',256,478);
 });
 const seal=mk(new THREE.CircleGeometry(1.9,48),new THREE.MeshStandardMaterial({map:sealTex,roughness:.35,metalness:.6}),0,6.9,-11.7,scene,false,false);
+// Estandartes
 function banner3D(x){
   const t=ctex(256,512,(g,w,h)=>{
     g.fillStyle='#6a1b9a';g.fillRect(0,0,w,h);
@@ -282,10 +285,12 @@ function banner3D(x){
   mk(CY(.05,.05,2.1,8),gold,x,8,-11.7,scene,false,false).rotation.z=Math.PI/2;
 }
 banner3D(-7);banner3D(7);
+// Ventanas nocturnas (pared derecha) + haces de luz
 const skyTex=ctex(256,512,(g,w,h)=>{
   const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#0c1236');gr.addColorStop(1,'#33407a');g.fillStyle=gr;g.fillRect(0,0,w,h);
   for(let i=0;i<60;i++){g.fillStyle=`rgba(255,255,255,${rnd(.3,1)})`;g.fillRect(rnd(0,w),rnd(0,h*.8),rnd(1,2.5),rnd(1,2.5))}
   g.fillStyle='#fff7d6';g.beginPath();g.arc(170,130,34,0,7);g.fill();g.fillStyle='#33407a';g.beginPath();g.arc(184,122,30,0,7);g.fill();
+  g.fillStyle='#fff7d6';g.fillStyle='rgba(255,247,214,.9)';g.beginPath();g.arc(170,130,34,0,7);g.arc(186,122,30,0,7,true);
 });
 const winGlass=new THREE.MeshBasicMaterial({map:skyTex});
 const shafts=[];
@@ -297,6 +302,7 @@ const shafts=[];
   const sh=new THREE.Mesh(new THREE.PlaneGeometry(2.3,10),new THREE.MeshBasicMaterial({map:shaftTex,transparent:true,opacity:.16,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
   sh.position.set(11.4,4.4,z);sh.rotation.z=-.62;scene.add(sh);shafts.push(sh);
 });
+// Cuadros en la pared izquierda
 [-6,2,10].forEach((z,i)=>{
   const t=ctex(256,320,(g,w,h)=>{
     const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,['#3a5a8c','#8c3a5a','#3a8c6a'][i]);gr.addColorStop(1,'#1c1230');g.fillStyle=gr;g.fillRect(0,0,w,h);
@@ -306,6 +312,7 @@ const shafts=[];
   const p=mk(new THREE.PlaneGeometry(2.1,2.7),new THREE.MeshStandardMaterial({map:t,roughness:.7}),-14.6,5.6,z,scene,false,false);p.rotation.y=Math.PI/2;
   B(.2,3.0,2.4,gold,-14.72,5.6,z,scene,false,false);
 });
+// Lámparas de araña
 const candleLights=[];
 function chandelier(x,z,light){
   const g=new THREE.Group();g.position.set(x,7.0,z);scene.add(g);
@@ -322,6 +329,8 @@ function chandelier(x,z,light){
 }
 chandelier(-5,-3,true);chandelier(5,-3,true);chandelier(0,9,false);chandelier(0,3,false);
 
+/* ---------- Mobiliario ---------- */
+// Estrado del juez
 B(7,1.8,2.4,darkWood,0,.9,-8);B(7.4,.2,2.8,lightWood,0,1.9,-8);
 B(7.8,.18,.9,lightWood,0,.09,-6.4);B(7.5,.14,.5,lightWood,0,.25,-6.8);
 B(1.8,.14,.04,gold,0,1.1,-6.78);
@@ -330,6 +339,7 @@ mk(new THREE.TorusGeometry(.12,.05,6,12),gold,0,5.0,-9.15,scene,false,false);
 [-.8,0,.8].forEach(x=>[3,3.6,4.2].forEach(y=>mk(SP(.05,8,6),gold,x,y,-9.15,scene,false,false)));
 B(.9,.18,.35,M(0x1a1226,{roughness:.4}),-1.9,2.1,-7.3);
 mk(CY(.2,.25,.15,16),M(0x2a1608),.95,2.0,-7.2);
+// Mesas de abogados
 function lawTable(x){
   B(3.4,1.1,1.2,darkWood,x,.55,1.6);B(3.7,.14,1.5,lightWood,x,1.15,1.6);
   B(.55,.06,.7,M(0xf4efe6),x-.8,1.25,1.6,scene,true,false);B(.5,.05,.65,M(0xe8e1d2),x-.75,1.31,1.55,scene,true,false);
@@ -338,12 +348,14 @@ function lawTable(x){
   mk(SP(.17,12,8),M(0xffe9a8,{emissive:lin(0xffd27a),emissiveIntensity:1.2}),x+1.1,1.78,1.4,scene,false,false).scale.y=.8;
 }
 lawTable(-5);lawTable(5);
-B(.9,.6,.14,M(0x3a2212,{roughness:.5}),-6.6,1.55,1.7);B(.9,.04,.1,gold,-6.6,1.86,1.7,scene,false,false);
+B(.9,.6,.14,M(0x3a2212,{roughness:.5}),-6.6,1.55,1.7);B(.9,.04,.1,gold,-6.6,1.86,1.7,scene,false,false); // maletín
+// Palco del jurado
 B(3,.5,10,lightWood,-12.3,.25,-1.75);
 B(.3,.7,9.8,darkWood,-10.6,.85,-1.75);B(.35,.12,10.1,lightWood,-10.6,1.25,-1.75);
 for(let i=0;i<22;i++)mk(CY(.05,.05,.45,8),darkWood,-10.6,.97,-6.4+i*.45,scene,false,false);
 B(.3,2.6,10,darkWood,-13.7,1.8,-1.75);
 for(let i=0;i<6;i++)B(1.3,.14,1.2,M(0x7a1830,{roughness:.8}),-12.7,.57,-5.5+i*1.5,scene,false,true);
+// Pizarra de pruebas
 const bc=document.createElement('canvas');bc.width=800;bc.height=450;
 const bctx=bc.getContext('2d'),btex=new THREE.CanvasTexture(bc);btex.encoding=THREE.sRGBEncoding;btex.anisotropy=8;
 const board=new THREE.Mesh(new THREE.PlaneGeometry(4.8,2.7),new THREE.MeshBasicMaterial({map:btex,toneMapped:false}));
@@ -359,6 +371,7 @@ function drawCard(a,b,c='#ffd23f'){
   g.font='bold 36px sans-serif';g.fillText(b.slice(0,38),400,296);
   btex.needsUpdate=true;board.material.map=btex;board.material.needsUpdate=true;
 }
+// Público
 const audience=[];
 [8.5,11].forEach((z,row)=>[-1,1].forEach(sd=>{
   B(7,.5,.9,lightWood,sd*6.2,.45,z);B(7,1.0,.15,darkWood,sd*6.2,1.1,z+.5);
@@ -369,12 +382,16 @@ const audience=[];
     s.position.set(sd*6.2-2.4+i*1.6,.7,z);s.rotation.y=Math.PI+rnd(-.25,.25);s.userData.ph=Math.random()*6;scene.add(s);audience.push(s);
   }
 }));
+// Polvo en suspensión
 const dN=220,dPos=new Float32Array(dN*3);
 for(let i=0;i<dN;i++){dPos[i*3]=rnd(-14,14);dPos[i*3+1]=rnd(.5,8.5);dPos[i*3+2]=rnd(-11,17)}
 const dGeo=new THREE.BufferGeometry();dGeo.setAttribute('position',new THREE.BufferAttribute(dPos,3));
 const dust=new THREE.Points(dGeo,new THREE.PointsMaterial({map:glowTex,color:0xffe9c0,size:.14,transparent:true,opacity:.5,depthWrite:false,blending:THREE.AdditiveBlending}));
 scene.add(dust);
 
+/* =====================================================================
+   CALCETINES · personajes
+   ===================================================================== */
 function numTex(n){return ctex(64,64,g=>{g.fillStyle='#ffd23f';g.fillRect(0,0,64,64);g.fillStyle='#1a1226';g.font='700 44px Bangers,Impact,sans-serif';g.textAlign='center';g.fillText(n,32,48)},null)}
 function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
   const g=new THREE.Group(),u=g.userData;
@@ -388,6 +405,7 @@ function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
   u.lv=0;u.alv=0;u.blink=rnd(1,4);u.ph=Math.random()*6;
   if(lite){g.scale.setScalar(s);return g}
   [-.25,.25].forEach(x=>mk(SP(.2,14,10),M(col2,{roughness:.9}),x,.1,.52,g).scale.set(1,.55,1.5));
+  // Cara
   u.eyes=[];u.brows=[];
   [-1,1].forEach(sd=>{
     const eg=new THREE.Group();eg.position.set(sd*.2,1.55,.43);g.add(eg);
@@ -404,6 +422,7 @@ function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
   mk(SP(.12,10,8),M(0xff7a8a),0,-.09,.04,mo,false,false).scale.set(1.2,.6,.5);
   mk(new THREE.BoxGeometry(.26,.06,.04),M(0xffffff),0,.13,.08,mo,false,false);
   u.mouth=mo;g.mouth=mo;
+  // Brazos
   const aM=acc==='juez'?M(0x15151f,{roughness:.7}):body;
   u.arms=[-1,1].map(sd=>{
     const a=new THREE.Group();a.position.set(sd*.52,1.0,.1);g.add(a);
@@ -411,6 +430,7 @@ function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
     if(acc==='acusado')mk(new THREE.TorusGeometry(.13,.025,6,12),M(0xbbbbbb,{metalness:.9,roughness:.3}),0,-.5,0,a).rotation.x=Math.PI/2;
     return a;
   });
+  // Complementos
   if(acc==='juez'){
     mk(CY(.6,.7,1.15,28),M(0x15151f,{roughness:.75}),0,.65,0,g);
     mk(new THREE.TorusGeometry(.62,.03,6,28),gold,0,1.22,0,g,false,false).rotation.x=Math.PI/2;
@@ -437,6 +457,7 @@ function sock(col,acc,s=1,col2=0xffffff,idx=0,lite=false){
   return g;
 }
 
+/* ---------- Actores y focos ---------- */
 const A={};
 function actor(id,sks,cm,look,head,sp){
   const sl=new THREE.SpotLight(0xfff0c0,0,45,sp,.6,1);
@@ -460,6 +481,7 @@ const jc=[0x4fd18b,0xc77dff,0xffd23f,0x5cc8ff,0xff7a8a,0xa3e635,0xff9f43,0x7f8cf
 jc.forEach((c,i)=>{const s=sock(c,'jurado',.9,[0xe23b4e,0x2f7de1][i%2],i);s.position.set(-12.3,.5,-5.6+i*1.2);s.rotation.y=Math.PI/2+.25;jury.push(s)});
 actor('jurado',jury,[-4.5,3.4,5],[-12.3,2,-1.75],[-12.3,2.9,-1.75],.55);
 
+/* Indicador "tiene la palabra" */
 const ic=document.createElement('canvas');ic.width=360;ic.height=96;
 const ix=ic.getContext('2d');
 ix.fillStyle='#ffd23f';ix.strokeStyle='#1a1226';ix.lineWidth=8;ix.fillRect(6,6,348,84);ix.strokeRect(6,6,348,84);
@@ -469,7 +491,7 @@ const ind=new THREE.Sprite(new THREE.SpriteMaterial({map:indTex,depthTest:false,
 ind.scale.set(3.6,.96,1);ind.renderOrder=9;ind.visible=false;scene.add(ind);
 
 /* =====================================================================
-   SONIDO
+   SONIDO (solo efectos; sin voces sintéticas)
    ===================================================================== */
 let AC;
 const ac=()=>{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC};
@@ -498,71 +520,139 @@ const sfx={
 };
 
 /* =====================================================================
-   WEBSOCKET · conexión con el bot
+   VOZ · micrófono, WebRTC (PeerJS) y análisis de nivel
    ===================================================================== */
-function setBusy(b){['create','join'].forEach(i=>$('#'+i).disabled=b)}
-const lobbyMsg=t=>$('#lobbyMsg').textContent=t||'';
+let peer=null,isHost=false,hostConn=null,conns={},roster={},myId=null,room='',pick=null;
+let localStream=null,micOK=false,calls={},auds={},ana={},joining=false;
+const MAX_PLAYERS=11,MAX_JURY=8;
+// STUN solo no basta con muchas redes (4G, wifis de empresa/universidad…): hace falta TURN como respaldo.
+const ICE = {
+  iceServers: [
+    { urls: ['stun:stun.l.google.com:19302'] },
+    { 
+      urls: [
+        'turn:TU_SUBDOMINIO.metered.ca:80',
+        'turn:TU_SUBDOMINIO.metered.ca:443?transport=udp',
+        'turn:TU_SUBDOMINIO.metered.ca:443?transport=tcp'
+      ], 
+      username: 'dd75ad9634f8e6ed36f422c3', 
+      credential: 'GVtRV8TsFqHYzHuQ' 
+    }
+  ],
+  iceCandidatePoolSize: 4
+};
 
-function connectWS(){
+async function getMic(){
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw 0;
+    localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+    micOK=true;
+    watch('__me',localStream);
+  }catch(e){
+    micErr=(e&&e.name)||'';micOK=false;localStream=ac().createMediaStreamDestination().stream; // pista silenciosa para poder escuchar igualmente
+  }
+}
+const canTalk=()=>!!me&&(over||me==='juez'||turn===me);
+function applyMic(){
+  if(!localStream)return;
+  const on=micOK&&canTalk()&&!selfMute;
+  localStream.getAudioTracks().forEach(t=>t.enabled=on);
+}
+function watch(id,stream){
+  if(ana[id])return;
+  try{
+    const a=ac(),src=a.createMediaStreamSource(stream),an=a.createAnalyser();an.fftSize=512;src.connect(an);
+    ana[id]={an,buf:new Uint8Array(an.fftSize),lv:0};
+  }catch(e){}
+}
+function sampleLevels(){
+  for(const id in ana){
+    const o=ana[id];o.an.getByteTimeDomainData(o.buf);
+    let s=0;for(let i=0;i<o.buf.length;i++){const v=(o.buf[i]-128)/128;s+=v*v}
+    const rms=Math.sqrt(s/o.buf.length),tg=Math.min(1,Math.max(0,(rms-.012)*10));
+    o.lv+=(tg-o.lv)*.45;
+  }
+}
+function onStream(id,stream){
+  let a=auds[id];
+  if(!a){a=document.createElement('audio');a.autoplay=true;a.playsInline=true;document.body.appendChild(a);auds[id]=a}
+  a.srcObject=stream;a.play().catch(()=>{});
+  watch(id,stream);
+}
+function dropAudio(id){
+  if(auds[id]){auds[id].srcObject=null;auds[id].remove();delete auds[id]}
+  const c=calls[id];delete calls[id];
+  if(c){try{c.close()}catch(e){}}
+  delete ana[id];
+}
+function attach(call,id){
+  calls[id]=call;
+  call.on('stream',s=>{if(calls[id]===call)onStream(id,s)});
+  const gone=()=>{if(calls[id]===call)dropAudio(id)};
+  call.on('close',gone);call.on('error',gone);
+  const pc=call.peerConnection;
+  if(pc){vst[id]=pc.iceConnectionState;pc.addEventListener('iceconnectionstatechange',()=>{vst[id]=pc.iceConnectionState;console.log('[voz]',id,pc.iceConnectionState)})}
+}
+function onCall(call){
+  const id=call.peer;
+  if(calls[id])dropAudio(id);
+  call.answer(localStream);
+  attach(call,id);
+}
+function retryCall(id,tries){
+  dropAudio(id);
+  if(tries>=3){vfail[id]=1;return}
+  setTimeout(()=>{if(peer&&roster[id]&&id!==myId&&!calls[id])callPeer(id,tries+1)},1500+tries*1500);
+}
+function callPeer(id,tries=0){
+  if(calls[id]||!peer||!localStream)return;
+  const c=peer.call(id,localStream);if(!c)return;
+  delete vfail[id];
+  attach(c,id);
+  const pc=c.peerConnection;
+  if(pc)pc.addEventListener('iceconnectionstatechange',()=>{if(calls[id]===c&&pc.iceConnectionState==='failed')retryCall(id,tries)});
+  setTimeout(()=>{if(calls[id]===c&&!auds[id])retryCall(id,tries)},15000);
+}
+function unlockAudio(){try{ac()}catch(e){}for(const id in auds)auds[id].play().catch(()=>{})}
+addEventListener('pointerdown',unlockAudio);addEventListener('keydown',unlockAudio);
+function newPeer(id){
   return new Promise((ok,no)=>{
-    try{
-      ws=new WebSocket(WS_URL);
-    }catch(e){return no(e)}
-    const to=setTimeout(()=>{try{ws.close()}catch(e){}no(new Error('timeout'))},12000);
-    ws.onopen=()=>{clearTimeout(to);ok()};
-    ws.onerror=()=>{clearTimeout(to);no(new Error('error de conexión'))};
-    ws.onclose=()=>{
-      if(myPid){
-        banner('CONEXIÓN PERDIDA','#ff4d5a',4000);
-        setTimeout(()=>location.reload(),4200);
-      }
-    };
-    ws.onmessage=ev=>{
-      let m;
-      try{m=JSON.parse(ev.data)}catch(e){return}
-      handleMsg(m);
-    };
+    let opened=false;
+    const p=id?new Peer(id,{debug:0,config:ICE}):new Peer({debug:0,config:ICE});
+    const to=setTimeout(()=>{if(!opened){try{p.destroy()}catch(e){}no({type:'timeout'})}},12000);
+    p.on('open',()=>{opened=true;clearTimeout(to);ok(p)});
+    p.on('error',e=>{if(!opened){clearTimeout(to);no(e)}else netErr(e)});
+    p.on('call',onCall);
+    p.on('disconnected',()=>{try{p.reconnect()}catch(e){}});
   });
 }
-
-function send(m){
-  if(ws&&ws.readyState===1)ws.send(JSON.stringify(m));
+function netErr(e){
+  if(e&&e.type==='peer-unavailable'&&joining)joinFail('No encuentro esa sala. Revisa el código.');
 }
+const lobbyMsg=t=>$('#lobbyMsg').textContent=t||'';
+function genCode(){const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<5;i++)s+=a[Math.floor(Math.random()*a.length)];return s}
 
-function handleMsg(m){
-  if(!m||typeof m!=='object')return;
-  if(m.t==='denied'){
-    setBusy(false);
-    lobbyMsg(String(m.why||'No se pudo entrar.'));
-    try{ws.close()}catch(e){}
-    ws=null;
-    return;
-  }
-  if(m.t==='welcome'){
-    setBusy(false);
-    myPid=m.pid;
-    room=m.code;
-    owner=m.owner;
-    myLink=m.link||'';
-    chanInfo=m.channel||null;
-    roster=m.roster||{};
-    enterGame(m.state);
-    return;
-  }
-  if(m.t==='roster'){
-    roster=m.roster||{};
-    owner=m.owner||owner;
-    renderRoster();
-    sync();
-    return;
-  }
-  if(m.t==='do')applyAct(m);
-}
-
+/* ---------- Red: mensajes ---------- */
+const bc_=(m,except)=>{for(const id in conns){if(id!==except&&conns[id].open)try{conns[id].send(m)}catch(e){}}};
+const snapshot=()=>({turn,over,v:lastVerdict,c:caseIdx,ev:lastEv});
+function rosterOut(){return JSON.parse(JSON.stringify(roster))}
 function emit(a,d={}){
-  send(Object.assign({t:'act',a},d));
+  const m=Object.assign({a},d);
+  if(isHost)handleAct(m,me,true);
+  else if(hostConn&&hostConn.open)hostConn.send(Object.assign({t:'act'},m));
 }
-
+function handleAct(m,role,self){
+  if(!m||typeof m.a!=='string'||!R[role])return;
+  const a=m.a,out={t:'do',a,from:role};
+  if(['turn','sil','verdict'].includes(a)&&role!=='juez')return;
+  if(a==='turn'){if(m.r!==null&&!['fiscal','acusado','jurado'].includes(m.r))return;out.r=m.r}
+  else if(a==='verdict'){out.g=m.g?1:0}
+  else if(a==='obj'){if(role!=='fiscal'&&role!=='acusado')return}
+  else if(a==='ev'){if(typeof m.u!=='string'||m.u.length>300000)return;out.u=m.u}
+  else if(a==='new'){if(!self&&role!=='juez')return;out.c=Math.floor(Math.random()*CASES.length)}
+  else if(a!=='sil')return;
+  bc_(out);applyAct(out);
+}
 function applyAct(m){
   switch(m.a){
     case 'turn':if(over)return;turn=m.r||null;sfx.ding();sync();break;
@@ -573,42 +663,96 @@ function applyAct(m){
     case 'new':newTrial(m.c);break;
   }
 }
-
-async function createRoom(){
-  if(!pick)return lobbyMsg('Primero elige un papel.');
-  setBusy(true);lobbyMsg('Conectando con el servidor…');
-  try{ac()}catch(e){}
-  try{
-    await connectWS();
-    send({t:'create',role:pick});
-  }catch(e){
-    setBusy(false);
-    lobbyMsg('No pude conectar con el servidor del juicio. Revisa WS_URL.');
+function hostData(c,m){
+  if(!m||typeof m!=='object')return;
+  if(m.t==='join'){
+    if(roster[c.peer])return;
+    const role=m.role,n=Object.keys(roster).length;
+    const deny=w=>{try{c.send({t:'denied',why:w})}catch(e){}setTimeout(()=>{try{c.close()}catch(e){}},400)};
+    if(!R[role])return deny('Papel no válido.');
+    if(n>=MAX_PLAYERS)return deny('La sala está llena (máx. '+MAX_PLAYERS+').');
+    if(role!=='jurado'&&Object.values(roster).some(r=>r.role===role))return deny('Ese papel ya está ocupado. Elige otro.');
+    if(role==='jurado'&&Object.values(roster).filter(r=>r.role==='jurado').length>=MAX_JURY)return deny('El jurado está completo (máx. '+MAX_JURY+').');
+    roster[c.peer]={role};conns[c.peer]=c;
+    c.send({t:'welcome',roster:rosterOut(),state:snapshot()});
+    bc_({t:'roster',roster:rosterOut()},c.peer);
+    renderRoster();sfx.join();
+  }else if(m.t==='act'){
+    const r=roster[c.peer];if(r)handleAct(m,r.role,false);
   }
 }
+function dropPeer(id){
+  dropAudio(id);
+  if(!roster[id])return;
+  delete roster[id];delete conns[id];
+  bc_({t:'roster',roster:rosterOut()});
+  renderRoster();sync();
+}
+function clientData(m){
+  if(!m||typeof m!=='object')return;
+  if(m.t==='denied'){joinFail(String(m.why||'No se pudo entrar.'));return}
+  if(m.t==='welcome'){
+    clearTimeout(joinFail.to);joining=false;
+    roster=m.roster||{};myId=peer.id;
+    for(const id in roster)if(id!==myId)callPeer(id);
+    enterGame(m.state);return;
+  }
+  if(m.t==='roster'){
+    const old=Object.keys(roster);roster=m.roster||{};
+    old.forEach(id=>{if(!roster[id])dropAudio(id)});
+    renderRoster();sync();return;
+  }
+  if(m.t==='do')applyAct(m);
+}
+function hostGone(){
+  if(isHost)return;
+  banner('LA SALA SE CERRÓ','#ff4d5a',3000);
+  setTimeout(()=>location.reload(),3200);
+}
 
+/* ---------- Lobby ---------- */
+function setBusy(b){['create','join'].forEach(i=>$('#'+i).disabled=b)}
+function joinFail(msg){
+  clearTimeout(joinFail.to);joining=false;setBusy(false);lobbyMsg(msg);
+  try{peer&&peer.destroy()}catch(e){}peer=null;hostConn=null;
+}
+async function createRoom(){
+  if(!pick)return lobbyMsg('Primero elige un papel.');
+  setBusy(true);lobbyMsg('Pidiendo micrófono…');
+  try{ac()}catch(e){}
+  await getMic();
+  lobbyMsg('Creando sala…');
+  for(let i=0;i<5;i++){
+    room=genCode();
+    try{peer=await newPeer('tcalc-'+room);break}
+    catch(e){peer=null;if(!e||e.type!=='unavailable-id'){setBusy(false);return lobbyMsg('No pude conectar con el servidor de señalización. Revisa tu conexión.')}}
+  }
+  if(!peer){setBusy(false);return lobbyMsg('No pude crear la sala. Inténtalo de nuevo.')}
+  isHost=true;myId=peer.id;me=pick;roster[myId]={role:pick};
+  peer.on('connection',c=>{c.on('data',m=>hostData(c,m));c.on('close',()=>dropPeer(c.peer));c.on('error',()=>dropPeer(c.peer))});
+  enterGame({c:Math.floor(Math.random()*CASES.length),turn:null,over:false});
+}
 async function joinRoom(){
   if(!pick)return lobbyMsg('Primero elige un papel.');
   const code=$('#code').value.trim().toUpperCase();
   if(!/^[A-Z0-9]{5}$/.test(code))return lobbyMsg('El código tiene 5 letras o números.');
-  setBusy(true);lobbyMsg('Conectando…');
+  setBusy(true);lobbyMsg('Pidiendo micrófono…');
   try{ac()}catch(e){}
-  try{
-    await connectWS();
-    send({t:'join',code,role:pick});
-  }catch(e){
-    setBusy(false);
-    lobbyMsg('No pude conectar con el servidor del juicio.');
-  }
+  await getMic();
+  lobbyMsg('Buscando sala…');joining=true;room=code;me=pick;
+  try{peer=await newPeer()}catch(e){joining=false;setBusy(false);return lobbyMsg('No pude conectar con el servidor de señalización.')}
+  hostConn=peer.connect('tcalc-'+code,{reliable:true});
+  joinFail.to=setTimeout(()=>joinFail('No encuentro esa sala (¿sigue abierta?).'),12000);
+  hostConn.on('open',()=>hostConn.send({t:'join',role:pick}));
+  hostConn.on('data',clientData);
+  hostConn.on('close',hostGone);
 }
-
 function enterGame(st){
   $('#intro').classList.add('hidden');
   $('#roomChip').textContent='📋 Sala '+room;
-  $('#again').classList.toggle('hidden',!(myPid===owner||me==='juez'));
+  $('#again').classList.toggle('hidden',!(isHost||me==='juez'));
   history.replaceState(null,'','#'+room);
   st=st||{};
-  me=pick;
   newTrial(st.c||0,true);
   turn=st.turn||null;over=!!st.over;
   if(st.ev)present(st.ev.u,st.ev.from,true);
@@ -617,7 +761,7 @@ function enterGame(st){
 }
 
 /* =====================================================================
-   UI / lógica
+   UI / lógica de juicio
    ===================================================================== */
 function banner(t,c='#ffd23f',ms=1800){
   const b=$('#banner');b.textContent=t;b.style.background=c;b.classList.remove('hidden');
@@ -634,12 +778,8 @@ function renderRoster(){
   const jur=Object.keys(roster).filter(k=>roster[k].role==='jurado');
   Object.keys(roster).forEach(id=>{
     const r=document.createElement('div');r.className='rr';
-    if(roster[id].l)r.classList.add('linked');
-    if(roster[id].v)r.classList.add('voice');
     const d=document.createElement('span');d.className='dot';
-    const n=document.createElement('span');
-    const roleName=R[roster[id].role]+(roster[id].role==='jurado'?' '+(jur.indexOf(id)+1):'');
-    n.textContent=ICON[roster[id].role]+' '+roleName+(id===myPid?' (tú)':'')+(roster[id].l?' 🔗':'')+(roster[id].v?' 🔊':'');
+    const n=document.createElement('span');n.textContent=ICON[roster[id].role]+' '+R[roster[id].role]+(roster[id].role==='jurado'?' '+(jur.indexOf(id)+1):'')+(id===myId?' (tú)':'');
     r.append(d,n);box.appendChild(r);rowEl[id]=r;
   });
 }
@@ -650,26 +790,21 @@ function sync(){
   $('#obj').classList.toggle('hidden',!(me==='fiscal'||me==='acusado')||over);
   $('#evBtn').disabled=over;
   $('#turnLbl').textContent=over?'🔨 Caso cerrado · sala abierta':turn?'🎤 Habla: '+R[turn]:'🤫 Sala en silencio';
-  updateMicUI();
+  applyMic();updateMicUI();
 }
 function updateMicUI(){
-  const s=$('#micS');
-  const can=over||me==='juez'||turn===me;
+  const s=$('#micS'),can=canTalk();
   let cls,t,d;
-  if(!myLink){cls='dead';t='⏳ Esperando…';d='Conectando…'}
-  else if(can){cls='open';t='🎤 PUEDES HABLAR';d=over?'El juicio terminó: habla con todos.':me==='juez'?'Como Juez puedes hablar siempre.':'¡Tienes la palabra! Habla en Discord.'}
-  else{cls='closed';t='🔇 Silenciado';d='Espera a que el Juez te dé la palabra.'}
+  if(!micOK){cls='dead';t='🚫 Sin micrófono';
+    d=micErr==='NotAllowedError'?'Permiso denegado. Pulsa el candado 🔒 de la barra del navegador, permite el micrófono y recarga.':
+      micErr==='NotFoundError'?'No se detecta ningún micrófono. Conéctalo y recarga.':
+      'Solo puedes escuchar. Da permiso al micrófono y recarga.'}
+  else if(selfMute){cls='closed';t='🔇 Te has silenciado';d='Nadie te oye hasta que te actives.'}
+  else if(can){cls='open';t='🎤 MICRÓFONO ABIERTO';d=over?'El juicio terminó: habla con todos.':me==='juez'?'Como Juez puedes hablar siempre.':'¡Tienes la palabra! Habla.'}
+  else{cls='closed';t='🔇 Micrófono cerrado';d=Object.values(roster).some(r=>r.role==='juez')?'Espera a que el Juez te dé la palabra.':'Falta un Juez en la sala.'}
   s.className='ui card '+cls;$('#micT').textContent=t;$('#micD').textContent=d;
-
-  let info='';
-  if(myLink){
-    info+='Código Discord: <code style="background:#ffd23f;color:#1a1226;padding:2px 6px;border-radius:4px">'+myLink+'</code><br>';
-    info+='Escribe <b>/yo '+myLink+'</b> en Discord';
-  }
-  if(chanInfo){
-    info+='<br><a href="'+chanInfo.url+'" target="_blank" style="color:#5cc8ff">→ Unirse a '+chanInfo.name+'</a>';
-  }
-  $('#linkInfo').innerHTML=info;
+  $('#selfMute').textContent=selfMute?'🎙️ Activarme':'🎙️ Silenciarme';
+  $('#selfMute').classList.toggle('hidden',!micOK);
 }
 function newTrial(c,quiet){
   over=false;turn=null;camOv=null;talk={};nEv=0;lastEv=null;lastVerdict=null;
@@ -753,6 +888,7 @@ $('#obj').onclick=()=>emit('obj');
 $('#vx').onclick=()=>{$('#viewer').classList.add('hidden');$('#vc').textContent=''};
 $('#again').onclick=()=>emit('new');
 $('#mute').onclick=()=>{mute=!mute;$('#mute').textContent=mute?'🔇':'🔊'};
+$('#selfMute').onclick=()=>{selfMute=!selfMute;sync()};
 function copyText(t){
   return new Promise(res=>{
     const fb=()=>{try{const x=document.createElement('textarea');x.value=t;x.setAttribute('readonly','');x.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(x);x.select();x.setSelectionRange(0,99);const ok=document.execCommand('copy');x.remove();res(ok)}catch(e){res(false)}};
@@ -766,19 +902,25 @@ $('#roomChip').onclick=async()=>{
   else{$('#roomChip').textContent='Sala '+room;try{prompt('Copia el código de sala:',room)}catch(e){}}
   setTimeout(chipTxt,1500);
 };
-addEventListener('beforeunload',()=>{try{ws&&ws.close()}catch(e){}});
+$('#reVoice').onclick=()=>{
+  unlockAudio();
+  Object.keys(roster).forEach(id=>{if(id!==myId){dropAudio(id);delete vfail[id];callPeer(id)}});
+};
+addEventListener('beforeunload',()=>{try{peer&&peer.destroy()}catch(e){}});
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});
 {const h=location.hash.slice(1).toUpperCase();if(/^[A-Z0-9]{5}$/.test(h))$('#code').value=h}
 $('#caseI').textContent='📁 '+CASES[Math.floor(Math.random()*CASES.length)];
 
 /* =====================================================================
-   BUCLE
+   BUCLE · cámara, animación y nivel de voz
    ===================================================================== */
 const OV={cam:[0,6.5,15.5],look:[0,2.2,-2]};
 const clk=new THREE.Clock(),cp=new THREE.Vector3(...OV.cam),cl=new THREE.Vector3(...OV.look),tp=new THREE.Vector3(),tl=new THREE.Vector3(),wv=new THREE.Vector3();
-function sockOf(role){
-  if(!A[role])return null;
-  return A[role].sks[0];
+function sockOf(id){
+  const r=roster[id];if(!r||!A[r.role])return null;
+  const a=A[r.role];if(r.role!=='jurado')return a.sks[0];
+  const ids=Object.keys(roster).filter(k=>roster[k].role==='jurado');
+  return a.sks[Math.min(ids.indexOf(id),a.sks.length-1)];
 }
 function loop(){
   requestAnimationFrame(loop);
@@ -794,37 +936,48 @@ function loop(){
   cam.lookAt(cl);
   hemi.intensity+=((hold?.32:.7)-hemi.intensity)*.06;
 
+  // Voz → calcetines
+  sampleLevels();
+  for(const id in A)A[id].sks.forEach(s=>s.userData.alv=0);
+  for(const id in ana){if(id==='__me')continue;const s=sockOf(id);if(s)s.userData.alv=Math.max(s.userData.alv,ana[id].lv)}
+  for(const id in rowEl){const el=rowEl[id];el.classList.toggle('spk',!!ana[id]&&ana[id].lv>.12);
+    el.classList.toggle('pend',id!==myId&&!auds[id]&&!vfail[id]);el.classList.toggle('fail',id!==myId&&!!vfail[id])}
+  if(ana.__me&&micOK&&!selfMute){$('#meter').style.width=Math.round(ana.__me.lv*100)+'%'}else $('#meter').style.width='0';
+  if(now-(loop.lc||0)>500){loop.lc=now;for(const k in calls){const pc=calls[k].peerConnection;if(pc&&pc.getStats)pc.getStats().then(r=>r.forEach(x=>{if(x.type==='inbound-rtp'&&(x.kind==='audio'||x.mediaType==='audio')){vlv[k]=x.audioLevel||0;vby[k]=x.bytesReceived||0}})).catch(()=>{})}for(const k in auds)if(auds[k].paused&&auds[k].srcObject)auds[k].play().catch(()=>{});
+    const o=Object.keys(roster).filter(k=>k!==myId);
+    $('#micC').textContent=!o.length?'👤 Estás solo en la sala':'🔗 Voz: '+o.map(k=>ICON[roster[k].role]+(auds[k]?'✅'+(auds[k].paused?'⛔pausado':'')+' 🔈'+Math.round((vlv[k]||0)*100)+' 📥'+Math.round((vby[k]||0)/1000)+'kB':vfail[k]?'❌':'⏳'+(vst[k]?' '+vst[k]:''))).join(' · ');
+  }
+
   for(const id in A){
     const a=A[id];
     a.sl.intensity+=((turn===id&&!over?3.2:0)-a.sl.intensity)*.12;
     a.sks.forEach((s,i)=>{
-      const u=s.userData;
-      const fake=(talk[id]>now&&i===0)?.5+.5*Math.abs(Math.sin(t*14)):0;
-      const speaking=turn===id&&!over;
-      const lv=Math.max(fake,speaking?(.3+.2*Math.abs(Math.sin(t*8))):0);
-      u.lv+=(lv-u.lv)*.4;
+      const u=s.userData,fake=(talk[id]>now&&i===0)?.5+.5*Math.abs(Math.sin(t*14)):0;
+      const lv=Math.max(u.alv,fake);u.lv+=(lv-u.lv)*.5;
       const sp=u.lv>.08;
       s.position.y=(s.userData.y0===undefined?(s.userData.y0=s.position.y):s.userData.y0)+(sp?Math.abs(Math.sin(t*12+i))*.05*u.lv*2:Math.sin(t*1.5+i)*.02);
       s.rotation.z=Math.sin(t*1.1+i*2)*.03+(sp?Math.sin(t*9)*.03:0);
-      if(u.mouth){u.mouth.scale.y=.2+u.lv*1.5;u.mouth.scale.x=1-u.lv*.15}
-      if(u.arms)u.arms.forEach(ar=>{const sd=ar.position.x>0?1:-1;ar.rotation.z+=((sd*(.3+u.lv*1.3+Math.sin(t*1.6+i)*.04))-ar.rotation.z)*.2;ar.rotation.x=-u.lv*.5*Math.sin(t*10+sd)});
-      if(u.brows)u.brows.forEach((b,j)=>{const sd=j?1:-1;b.rotation.z+=((sd*-u.lv*.3)-b.rotation.z)*.25;b.position.y=1.77+u.lv*.05});
+      u.mouth.scale.y=.2+u.lv*1.5;u.mouth.scale.x=1-u.lv*.15;
+      u.arms.forEach(ar=>{const sd=ar.position.x>0?1:-1;ar.rotation.z+=((sd*(.3+u.lv*1.3+Math.sin(t*1.6+i)*.04))-ar.rotation.z)*.2;ar.rotation.x=-u.lv*.5*Math.sin(t*10+sd)});
+      u.brows.forEach((b,j)=>{const sd=j?1:-1;b.rotation.z+=((sd*-u.lv*.3)-b.rotation.z)*.25;b.position.y=1.77+u.lv*.05});
       u.blink-=dt;
       const bl=u.blink<0?Math.max(0,1-Math.abs(u.blink+.08)*12):0;
-      if(u.eyes)u.eyes.forEach(e=>e.scale.y=Math.max(.08,1-bl));
+      u.eyes.forEach(e=>e.scale.y=Math.max(.08,1-bl));
       if(u.blink<-.16)u.blink=rnd(2,5);
       if(u.sweat){u.sweat.position.y=1.9-((t*.6)%1)*.5;u.sweat.material.opacity=1-((t*.6)%1)}
     });
   }
+  // Público y ambiente
   audience.forEach(s=>{s.position.y=.7+Math.max(0,Math.sin(t*1.4+s.userData.ph))*.04;s.rotation.z=Math.sin(t*.8+s.userData.ph)*.04});
   candleLights.forEach((l,i)=>l.intensity=1.1+Math.sin(t*7+i*3)*.07+Math.sin(t*13+i)*.04);
   shafts.forEach((s,i)=>s.material.opacity=.13+Math.sin(t*.5+i*2)*.04);
   dust.rotation.y=t*.01;dust.position.y=Math.sin(t*.2)*.3;
   const p=(now-gvT)/220;
   gv.rotation.x=p<1?-1+2.2*p:p<2?1.2-1.4*(p-1):-.2;
+  // Indicador del turno
   ind.visible=false;
-  if(hold&&A[turn]){
-    const s=A[turn].sks[0];
+  if(hold){
+    const id=Object.keys(roster).find(k=>roster[k].role===turn),s=id?sockOf(id):null;
     if(s){ind.visible=true;s.getWorldPosition(wv);ind.position.set(wv.x,wv.y+(2.5*s.scale.y)+Math.sin(t*4)*.12,wv.z)}
   }
   ren.render(scene,cam);
