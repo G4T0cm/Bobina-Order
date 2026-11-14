@@ -161,7 +161,7 @@ h1{font:400 clamp(38px,8vw,78px) Bangers,Impact,sans-serif;margin:0;color:var(--
   <div class="row"><button class="btn green" id="phaseBtn"></button></div>
   <div id="pv" class="hidden"></div>
   <div class="row"><input id="caseIn" placeholder="Nombre del caso" maxlength="90" aria-label="Nombre del caso"><button class="btn tag" id="caseGo">✏️ Cambiar caso</button></div>
-  <div class="row"><button class="btn purple" id="jurBtn">👥 Jurado</button><button class="btn tag" id="zoomBtn">🔍 Zoom pantalla</button></div>
+  <div class="row"><button class="btn purple" id="jurBtn">👥 Jurado</button><button class="btn tag" id="zoomBtn">🔍 Zoom pantalla</button><button class="btn tag" id="emoJ">😜 Emotes: ON</button></div>
   <div class="row"><button class="btn purple" id="modeBtn"></button></div>
   <div class="row"><button class="btn blue" id="t_fiscal">🎤 Fiscal+Abog.</button><button class="btn blue" id="t_acusado">🎤 Defensa+Abog.</button><button class="btn blue" id="t_jurado">🎤 Jurado</button></div>
   <div class="row"><button class="btn" id="sil">🔨 ¡Silencio en la sala!</button></div>
@@ -844,7 +844,7 @@ function emit(a,d={}){
   if(isHost)handleAct(m,me,true);
   else if(hostConn&&hostConn.open)hostConn.send(Object.assign({t:'act'},m));
 }
-const JUDGE_ONLY=['poll','pollshow','zoom','phase','turn','sil','verdict','mode','case','punish','evctl','ev'];
+const JUDGE_ONLY=['emotoggle','poll','pollshow','zoom','phase','turn','sil','verdict','mode','case','punish','evctl','ev'];
 function handleAct(m,role,self){
   if(!m||typeof m.a!=='string'||!R[role])return;
   const a=m.a,out={t:'do',a,from:role};
@@ -863,8 +863,9 @@ function handleAct(m,role,self){
   else if(a==='new'){if(role!=='juez')return;out.c=Math.floor(Math.random()*CASES.length)}
   else if(a==='phase'){out.p=['espera','himno','juicio'].includes(m.p)?m.p:'juicio'}
   else if(a==='salute'){const pid=self?myId:m.pid;if(!roster[pid])return;out.id=pid}
-  else if(a==='emote'){const pid=self?myId:m.pid;if(!roster[pid])return;const i=m.i|0;if(i<0||i>=EMOTES.length)return;const n=Date.now();if(n-(emAt[pid]||0)<1500)return;emAt[pid]=n;out.id=pid;out.i=i}
+  else if(a==='emote'){const pid=self?myId:m.pid;if(!roster[pid]||(emotesOff&&role!=='juez'))return;const i=m.i|0;if(i<0||i>=EMOTES.length)return;const n=Date.now();if(n-(emAt[pid]||0)<10000)return;emAt[pid]=n;out.id=pid;out.i=i}
   else if(a==='zoom'){}
+  else if(a==='emotoggle'){out.o=emotesOff?0:1}
   else if(a==='poll'){if(typeof m.q!=='string'||!m.q.trim())return;out.q=m.q.trim().slice(0,120);pollV={}}
   else if(a==='vote'){const pid=self?myId:m.pid;if(role!=='jurado'||!poll||!poll.open||!roster[pid])return;pollV[pid]=m.v?1:0;out.d=Object.keys(pollV)}
   else if(a==='pollshow'){if(!poll)return;const v=Object.values(pollV);out.y=v.filter(x=>x).length;out.n=v.length-out.y}
@@ -889,6 +890,7 @@ function applyAct(m){
     case 'poll':poll={q:m.q,open:true,d:[]};myVote=null;drawPoll(m.q,'🗳 VOTACIÓN','#4aa8ff');banner('🗳️ VOTACIÓN DEL JURADO','#4aa8ff',1800);sfx.ding();pollUI();break;
     case 'vote':if(poll){poll.d=m.d||[];pollUI()}break;
     case 'pollshow':if(poll){poll.open=false;drawPie(poll.q,m.y,m.n);banner('📊 RESULTADO','#ffd23f',1500);crowdUntil=performance.now()+1500;pollUI()}break;
+    case 'emotoggle':emotesOff=!!m.o;emUI();if(emotesOff)$('#emBox').classList.add('hidden');banner(emotesOff?'😶 EMOTES DESACTIVADOS':'😜 EMOTES ACTIVADOS','#ffd23f',1400);break;
     case 'zoom':zoomOn=!zoomOn;if(zoomOn)focus([0,2.8,4.4],[0,2.8,.5],6e5);else camOv=null;$('#zoomBtn').textContent=zoomOn?'🔍 Quitar zoom':'🔍 Zoom pantalla';break;
     case 'new':newTrial(m.c);break;
   }
@@ -1170,14 +1172,14 @@ $('#evGo').onclick=()=>{
 $('#evUrl').onkeydown=e=>{if(e.key==='Enter')$('#evGo').click()};
 $('#obj').onclick=()=>{if(Date.now()>=objUntil)emit('obj')};
 $('#pollGo').onclick=()=>{const q=$('#pollIn').value.trim();if(q){emit('poll',{q});$('#pollIn').value=''}};
-$('#pollShow').onclick=()=>emit('pollshow');
+$('#pollShow').onclick=()=>{emit('pollshow');$('#pollMenu').classList.add('hidden')};
 $('#jurBtn').onclick=()=>{$('#pollMenu').classList.toggle('hidden');pollUI()};$('#pollX').onclick=()=>$('#pollMenu').classList.add('hidden');
 function mkDrag(p){const h=p.querySelector('b');let dx=0,dy=0,on=false;h.title='Arrastra para mover';
   h.onpointerdown=e=>{const r=p.getBoundingClientRect();p.style.transform='none';p.style.left=r.left+'px';p.style.top=r.top+'px';p.style.right='auto';p.style.bottom='auto';dx=e.clientX-r.left;dy=e.clientY-r.top;on=true;h.setPointerCapture(e.pointerId)};
   h.onpointermove=e=>{if(!on)return;p.style.left=Math.max(0,Math.min(innerWidth-60,e.clientX-dx))+'px';p.style.top=Math.max(0,Math.min(innerHeight-40,e.clientY-dy))+'px'};
   h.onpointerup=h.onpointercancel=()=>{on=false}}
 mkDrag($('#judgeP'));mkDrag($('#pollMenu'));
-$('#zoomBtn').onclick=()=>emit('zoom');
+$('#zoomBtn').onclick=()=>emit('zoom');$('#emoJ').onclick=()=>emit('emotoggle');
 $('#voteY').onclick=()=>{if(poll&&poll.open){myVote=1;emit('vote',{v:1});banner('✅ Voto enviado','#4fd18b',900);pollUI()}};$('#voteN').onclick=()=>{if(poll&&poll.open){myVote=0;emit('vote',{v:0});banner('✅ Voto enviado','#4fd18b',900);pollUI()}};
 $('#scPause').onclick=()=>emit('evctl',{c:'pause'});
 $('#scPlay').onclick=()=>emit('evctl',{c:'play'});
@@ -1206,7 +1208,7 @@ function emoteFX(id,idx){
   fxs.push({k:'emote',sp,sock:s,id,t0:performance.now(),w:2.0,h:2.0*h/256});
   sfx.pop();
 }
-(()=>{const box=$('#emBox');EMOTES.forEach((e,i)=>{const b=document.createElement('button');b.className='em';b.textContent=e[0];b.title=e[1]||e[0];b.onclick=()=>{if(Date.now()<emLocal)return;emLocal=Date.now()+1500;emit('emote',{i});box.classList.add('hidden')};box.appendChild(b)});
+(()=>{const box=$('#emBox');EMOTES.forEach((e,i)=>{const b=document.createElement('button');b.className='em';b.textContent=e[0];b.title=e[1]||e[0];b.onclick=()=>{if(emotesOff&&me!=='juez')return;if(Date.now()<emLocal){banner('⏳ Espera '+Math.ceil((emLocal-Date.now())/1000)+'s para otro emote','#ffd23f',900);return}emLocal=Date.now()+10000;emit('emote',{i});box.classList.add('hidden')};box.appendChild(b)});
 $('#emBtn').onclick=()=>box.classList.toggle('hidden')})();
 const BGM_ID='4kLOu3813BU';let bgm=null,bgmOn=true;
 function bgmCmd(f,a=[]){try{bgm&&bgm.contentWindow&&bgm.contentWindow.postMessage(JSON.stringify({event:'command',func:f,args:a}),'*')}catch(e){}}
@@ -1264,7 +1266,7 @@ fitRenderer(true);
 $('#caseI').textContent='📁 '+CASES[Math.floor(Math.random()*CASES.length)];
 
 /* ===================== EXTRAS: directo, luces, público, votación, pruebas ===================== */
-let poll=null,pollV={},myVote=null,zoomOn=false,evHist=[],liveT0=0,liveEnd=0,crowdUntil=0;
+let emotesOff=false,poll=null,pollV={},myVote=null,zoomOn=false,evHist=[],liveT0=0,liveEnd=0,crowdUntil=0;
 function drawPoll(q,t,c){drawCard(t,'',c);const g=bctx;g.fillStyle='#1c0b33';g.font='bold 30px sans-serif';g.textAlign='center';const L=[''];q.split(' ').forEach(x=>{const k=L.length-1;if((L[k]+' '+x).length>34)L.push(x);else L[k]=(L[k]+' '+x).trim()});L.slice(0,3).forEach((l,i)=>g.fillText(l,400,270+i*38));btex.needsUpdate=true}
 function drawPie(q,y,n){
   drawCard('','','#f1e6ff');const g=bctx,t=y+n;g.fillStyle='#1c0b33';g.textAlign='center';g.font='bold 26px sans-serif';
@@ -1279,6 +1281,7 @@ function drawPie(q,y,n){
   g.fillStyle='#c2233a';g.fillText('NO: '+n+(t?' ('+Math.round(n/t*100)+'%)':''),400,270);
   g.fillStyle='#1c0b33';g.font='62px Bangers,Impact,sans-serif';g.fillText(!t?'SIN VOTOS':y>n?'GANA EL SÍ':n>y?'GANA EL NO':'¡EMPATE!',400,350);
   btex.needsUpdate=true}
+function emUI(){$('#emBtn').disabled=emotesOff&&me!=='juez';$('#emBtn').textContent=emotesOff&&me!=='juez'?'😶 Emotes desactivados':'😜 Emotes';$('#emoJ').textContent=emotesOff?'😶 Emotes: OFF':'😜 Emotes: ON'}
 function pollUI(){
   const jur=Object.keys(roster).filter(k=>roster[k].role==='jurado');
   $('#voteBox').classList.toggle('hidden',!(poll&&poll.open&&me==='jurado'&&myVote===null));
