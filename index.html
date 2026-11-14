@@ -57,6 +57,7 @@ h1{font:400 clamp(38px,8vw,78px) Bangers,Impact,sans-serif;margin:0;color:var(--
 #sc iframe,#sc video,#sc img{width:100%;max-height:68vh;aspect-ratio:16/9;object-fit:contain;border:3px solid var(--ink);border-radius:10px;background:#000;display:block}
 #sc a{color:#6a1fc2}
 #evQ{left:10px;bottom:140px;max-width:min(340px,92vw);display:flex;flex-wrap:wrap;gap:6px;padding:6px 8px;z-index:6;align-items:center}#evQ img{width:40px;height:24px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:4px}
+#pollMenu{left:50%;top:50%;transform:translate(-50%,-50%);z-index:9;width:min(440px,92vw)}#pollMenu input{width:100%}#judgeP>b,#pollMenu>b{cursor:move;touch-action:none;user-select:none;display:block}
 #voteBox{left:50%;bottom:34%;transform:translateX(-50%);z-index:7;text-align:center;width:min(420px,90vw)}#voteBox .btn{font-size:30px;margin:4px}#voteBox .sel{outline:4px solid #4fd18b}
 #saludar,#himnoBtn{position:fixed;width:min(320px,80vw);left:calc(50% - min(320px,80vw)/2);bottom:22%;font-size:44px;padding:14px 20px;z-index:7;border-radius:18px}
 #saludar{animation:glow 1.2s ease-in-out infinite alternate}
@@ -135,6 +136,7 @@ h1{font:400 clamp(38px,8vw,78px) Bangers,Impact,sans-serif;margin:0;color:var(--
 </div>
 
 <div id="evQ" class="ui card hidden"></div>
+<div id="pollMenu" class="ui card hidden"><b>👥 Preguntar al jurado</b><input id="pollIn" placeholder="Ej: ¿Es el acusado un mentiroso?" maxlength="120" autocomplete="off"><div class="row"><button class="btn green" id="pollGo">📨 Enviar pregunta</button><button class="btn blue" id="pollShow">📊 Mostrar resultado</button><button class="btn tag" id="pollX">✕</button></div><div id="pollSt" style="font-size:15px;margin-top:6px"></div></div>
 <div id="voteBox" class="ui card hidden"><b>🗳️ Voto secreto del jurado</b><div id="voteQ" style="font-size:20px;margin:6px 0"></div><button class="btn green" id="voteY">SÍ</button><button class="btn red" id="voteN">NO</button><div id="voteS" style="font-size:13px"></div></div>
 <div id="screen" class="ui card hidden">
   <div id="sc"></div>
@@ -155,12 +157,11 @@ h1{font:400 clamp(38px,8vw,78px) Bangers,Impact,sans-serif;margin:0;color:var(--
 </div>
 
 <div id="judgeP" class="ui card hidden">
-  <b>⚖️ Panel del Juez</b>
+  <b>⚖️ Panel del Juez ✥</b>
   <div class="row"><button class="btn green" id="phaseBtn"></button></div>
   <div id="pv" class="hidden"></div>
   <div class="row"><input id="caseIn" placeholder="Nombre del caso" maxlength="90" aria-label="Nombre del caso"><button class="btn tag" id="caseGo">✏️ Cambiar caso</button></div>
-  <div class="row"><input id="pollIn" placeholder="Pregunta Sí/No al jurado…" maxlength="120"><button class="btn tag" id="pollGo">🗳️ Preguntar</button></div>
-  <div class="row"><button class="btn tag blue" id="pollShow">📊 Mostrar resultado</button><button class="btn tag" id="zoomBtn">🔍 Zoom pantalla</button><span id="pollSt" style="font-size:13px"></span></div>
+  <div class="row"><button class="btn purple" id="jurBtn">👥 Jurado</button><button class="btn tag" id="zoomBtn">🔍 Zoom pantalla</button></div>
   <div class="row"><button class="btn purple" id="modeBtn"></button></div>
   <div class="row"><button class="btn blue" id="t_fiscal">🎤 Fiscal+Abog.</button><button class="btn blue" id="t_acusado">🎤 Defensa+Abog.</button><button class="btn blue" id="t_jurado">🎤 Jurado</button></div>
   <div class="row"><button class="btn" id="sil">🔨 ¡Silencio en la sala!</button></div>
@@ -865,7 +866,7 @@ function handleAct(m,role,self){
   else if(a==='emote'){const pid=self?myId:m.pid;if(!roster[pid])return;const i=m.i|0;if(i<0||i>=EMOTES.length)return;const n=Date.now();if(n-(emAt[pid]||0)<1500)return;emAt[pid]=n;out.id=pid;out.i=i}
   else if(a==='zoom'){}
   else if(a==='poll'){if(typeof m.q!=='string'||!m.q.trim())return;out.q=m.q.trim().slice(0,120);pollV={}}
-  else if(a==='vote'){const pid=self?myId:m.pid;if(role!=='jurado'||!poll||!poll.open||!roster[pid])return;pollV[pid]=m.v?1:0;out.n=Object.keys(pollV).length}
+  else if(a==='vote'){const pid=self?myId:m.pid;if(role!=='jurado'||!poll||!poll.open||!roster[pid])return;pollV[pid]=m.v?1:0;out.d=Object.keys(pollV)}
   else if(a==='pollshow'){if(!poll)return;const v=Object.values(pollV);out.y=v.filter(x=>x).length;out.n=v.length-out.y}
   else if(a!=='sil')return;
   bc_(out);applyAct(out);
@@ -885,9 +886,9 @@ function applyAct(m){
     case 'phase':setPhase(m.p);break;
     case 'salute':saluteFX(m.id);break;
     case 'emote':crowdUntil=Math.max(crowdUntil,performance.now()+1200);emoteFX(m.id,m.i);if(m.i<2&&me==='juez')sfx.ding();break;
-    case 'poll':poll={q:m.q,open:true,n:0};myVote=null;drawPoll(m.q,'🗳 VOTACIÓN','#4aa8ff');banner('🗳️ VOTACIÓN DEL JURADO','#4aa8ff',1800);sfx.ding();pollUI();break;
-    case 'vote':if(poll){poll.n=m.n;pollUI()}break;
-    case 'pollshow':if(poll){poll.open=false;drawPoll(poll.q,'SÍ '+m.y+' · NO '+m.n,m.y>m.n?'#4fd18b':m.n>m.y?'#e0245e':'#ffd23f');banner('📊 RESULTADO','#ffd23f',1500);crowdUntil=performance.now()+1500;pollUI()}break;
+    case 'poll':poll={q:m.q,open:true,d:[]};myVote=null;drawPoll(m.q,'🗳 VOTACIÓN','#4aa8ff');banner('🗳️ VOTACIÓN DEL JURADO','#4aa8ff',1800);sfx.ding();pollUI();break;
+    case 'vote':if(poll){poll.d=m.d||[];pollUI()}break;
+    case 'pollshow':if(poll){poll.open=false;drawPie(poll.q,m.y,m.n);banner('📊 RESULTADO','#ffd23f',1500);crowdUntil=performance.now()+1500;pollUI()}break;
     case 'zoom':zoomOn=!zoomOn;if(zoomOn)focus([0,2.8,4.4],[0,2.8,.5],6e5);else camOv=null;$('#zoomBtn').textContent=zoomOn?'🔍 Quitar zoom':'🔍 Zoom pantalla';break;
     case 'new':newTrial(m.c);break;
   }
@@ -1169,8 +1170,15 @@ $('#evGo').onclick=()=>{
 $('#evUrl').onkeydown=e=>{if(e.key==='Enter')$('#evGo').click()};
 $('#obj').onclick=()=>{if(Date.now()>=objUntil)emit('obj')};
 $('#pollGo').onclick=()=>{const q=$('#pollIn').value.trim();if(q){emit('poll',{q});$('#pollIn').value=''}};
-$('#pollShow').onclick=()=>emit('pollshow');$('#zoomBtn').onclick=()=>emit('zoom');
-$('#voteY').onclick=()=>{if(poll&&poll.open){myVote=1;emit('vote',{v:1});pollUI()}};$('#voteN').onclick=()=>{if(poll&&poll.open){myVote=0;emit('vote',{v:0});pollUI()}};
+$('#pollShow').onclick=()=>emit('pollshow');
+$('#jurBtn').onclick=()=>{$('#pollMenu').classList.toggle('hidden');pollUI()};$('#pollX').onclick=()=>$('#pollMenu').classList.add('hidden');
+function mkDrag(p){const h=p.querySelector('b');let dx=0,dy=0,on=false;h.title='Arrastra para mover';
+  h.onpointerdown=e=>{const r=p.getBoundingClientRect();p.style.transform='none';p.style.left=r.left+'px';p.style.top=r.top+'px';p.style.right='auto';p.style.bottom='auto';dx=e.clientX-r.left;dy=e.clientY-r.top;on=true;h.setPointerCapture(e.pointerId)};
+  h.onpointermove=e=>{if(!on)return;p.style.left=Math.max(0,Math.min(innerWidth-60,e.clientX-dx))+'px';p.style.top=Math.max(0,Math.min(innerHeight-40,e.clientY-dy))+'px'};
+  h.onpointerup=h.onpointercancel=()=>{on=false}}
+mkDrag($('#judgeP'));mkDrag($('#pollMenu'));
+$('#zoomBtn').onclick=()=>emit('zoom');
+$('#voteY').onclick=()=>{if(poll&&poll.open){myVote=1;emit('vote',{v:1});banner('✅ Voto enviado','#4fd18b',900);pollUI()}};$('#voteN').onclick=()=>{if(poll&&poll.open){myVote=0;emit('vote',{v:0});banner('✅ Voto enviado','#4fd18b',900);pollUI()}};
 $('#scPause').onclick=()=>emit('evctl',{c:'pause'});
 $('#scPlay').onclick=()=>emit('evctl',{c:'play'});
 $('#scClose').onclick=()=>emit('evctl',{c:'close'});
@@ -1258,12 +1266,26 @@ $('#caseI').textContent='📁 '+CASES[Math.floor(Math.random()*CASES.length)];
 /* ===================== EXTRAS: directo, luces, público, votación, pruebas ===================== */
 let poll=null,pollV={},myVote=null,zoomOn=false,evHist=[],liveT0=0,liveEnd=0,crowdUntil=0;
 function drawPoll(q,t,c){drawCard(t,'',c);const g=bctx;g.fillStyle='#1c0b33';g.font='bold 30px sans-serif';g.textAlign='center';const L=[''];q.split(' ').forEach(x=>{const k=L.length-1;if((L[k]+' '+x).length>34)L.push(x);else L[k]=(L[k]+' '+x).trim()});L.slice(0,3).forEach((l,i)=>g.fillText(l,400,270+i*38));btex.needsUpdate=true}
+function drawPie(q,y,n){
+  drawCard('','','#f1e6ff');const g=bctx,t=y+n;g.fillStyle='#1c0b33';g.textAlign='center';g.font='bold 26px sans-serif';
+  const L=[''];q.split(' ').forEach(x=>{const k=L.length-1;if((L[k]+' '+x).length>40)L.push(x);else L[k]=(L[k]+' '+x).trim()});
+  L.slice(0,2).forEach((l,i)=>g.fillText(l,400,84+i*30));
+  const cx=230,cy=272,r=115;
+  if(!t){g.fillStyle='#9a8fb0';g.beginPath();g.arc(cx,cy,r,0,7);g.fill()}
+  else{let a0=-Math.PI/2;[[y,'#4fd18b'],[n,'#e0245e']].forEach(([v,c])=>{if(!v)return;const a1=a0+v/t*Math.PI*2;g.fillStyle=c;g.beginPath();g.moveTo(cx,cy);g.arc(cx,cy,r,a0,a1);g.closePath();g.fill();g.strokeStyle='#1c0b33';g.lineWidth=5;g.stroke();a0=a1})}
+  g.strokeStyle='#1c0b33';g.lineWidth=6;g.beginPath();g.arc(cx,cy,r,0,7);g.stroke();
+  g.textAlign='left';g.font='44px Bangers,Impact,sans-serif';
+  g.fillStyle='#1f9d62';g.fillText('SÍ: '+y+(t?' ('+Math.round(y/t*100)+'%)':''),400,215);
+  g.fillStyle='#c2233a';g.fillText('NO: '+n+(t?' ('+Math.round(n/t*100)+'%)':''),400,270);
+  g.fillStyle='#1c0b33';g.font='62px Bangers,Impact,sans-serif';g.fillText(!t?'SIN VOTOS':y>n?'GANA EL SÍ':n>y?'GANA EL NO':'¡EMPATE!',400,350);
+  btex.needsUpdate=true}
 function pollUI(){
-  const jur=Object.keys(roster).filter(k=>roster[k].role==='jurado').length,vb=$('#voteBox');
-  vb.classList.toggle('hidden',!(poll&&poll.open&&me==='jurado'));
-  if(poll){$('#voteQ').textContent=poll.q;$('#voteS').textContent=myVote===null?'Tu voto es anónimo':'✅ Voto enviado (puedes cambiarlo)'}
-  $('#voteY').classList.toggle('sel',myVote===1);$('#voteN').classList.toggle('sel',myVote===0);
-  $('#pollSt').textContent=poll&&poll.open?'Votos: '+poll.n+'/'+jur:'';
+  const jur=Object.keys(roster).filter(k=>roster[k].role==='jurado');
+  $('#voteBox').classList.toggle('hidden',!(poll&&poll.open&&me==='jurado'&&myVote===null));
+  if(poll)$('#voteQ').textContent=poll.q;
+  const d=(poll&&poll.d)||[];
+  $('#pollSt').textContent=poll?(poll.open?'Votos: ':'Cerrada: ')+jur.map((id,i)=>'👥'+(i+1)+(d.includes(id)?'✅':'⏳')).join('  '):'';
+  $('#pollShow').disabled=!(poll&&poll.open);
 }
 function renderEvQ(){
   const b=$('#evQ');b.textContent='';b.classList.toggle('hidden',!evHist.length);if(!evHist.length)return;
@@ -1274,13 +1296,6 @@ function renderEvQ(){
     if(me==='juez')x.onclick=()=>emit('ev',{u:e.u});else{x.style.pointerEvents='none'}
     b.appendChild(x)});
 }
-/* cartel EN DIRECTO + reloj */
-const lc=document.createElement('canvas');lc.width=512;lc.height=128;const lg=lc.getContext('2d'),ltx=new THREE.CanvasTexture(lc);ltx.encoding=THREE.sRGBEncoding;
-const liveM=new THREE.Mesh(new THREE.PlaneGeometry(2.8,.7),new THREE.MeshBasicMaterial({map:ltx,transparent:true,toneMapped:false}));liveM.position.set(0,4.95,.55);scene.add(liveM);
-let liveKey='';
-function drawLive(txt,col,dot){lg.clearRect(0,0,512,128);lg.fillStyle=col;lg.beginPath();lg.roundRect?lg.roundRect(6,10,500,108,24):lg.rect(6,10,500,108);lg.fill();lg.strokeStyle='#1c0b33';lg.lineWidth=6;lg.stroke();
-  if(dot){lg.fillStyle='#fff';lg.beginPath();lg.arc(48,64,16,0,7);lg.fill()}
-  lg.fillStyle='#fff';lg.font='60px Bangers,Impact,sans-serif';lg.textAlign='left';lg.fillText(txt,dot?84:30,86);ltx.needsUpdate=true}
 /* luz ambiental dinámica */
 const mood=new THREE.PointLight(0xffffff,0,45,1.5);mood.position.set(0,7,6);scene.add(mood);
 /* público en las gradas */
@@ -1290,18 +1305,10 @@ for(let r=0;r<3;r++){const m=new THREE.Mesh(new THREE.BoxGeometry(21,.5+r*.45,1.
     aB.setColorAt(i,new THREE.Color().setHSL(Math.random(),.6,.5));aHd.setColorAt(i,new THREE.Color().setHSL(.07,.5,.4+Math.random()*.35))}}
 scene.add(aB,aHd);
 function extraTick(t,now){
-  /* directo */
-  if(phase==='juicio'&&!liveT0)liveT0=Date.now();if(phase!=='juicio'&&!over)liveT0=0;
-  if(over&&!liveEnd)liveEnd=Date.now();if(!over)liveEnd=0;
-  const sec=liveT0?Math.floor(((liveEnd||Date.now())-liveT0)/1000):0,mm=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0'),bl=Math.floor(t*1.5)%2;
-  const st=over?'c':phase==='juicio'?'l':'w',key=st+mm+(st==='l'?bl:'');
-  if(key!==liveKey){liveKey=key;if(st==='l')drawLive('EN DIRECTO '+mm,'#d4143c',bl);else if(st==='c')drawLive('CERRADO '+mm,'#3a2a55',0);else drawLive('EN ESPERA','#6a5a8a',0)}
   /* luces */
   let c=0xffffff,i=0;
   if(phase==='himno'){c=new THREE.Color().setHSL((t*.15)%1,.8,.6);i=2.4}
   else if(over&&lastVerdict){if(lastVerdict.g){i=2.6;c=Math.sin(t*8)>0?0xff2020:0x2060ff}else{i=2;c=0xffd23f}}
-  else if(poll&&poll.open){i=1.5+Math.sin(t*4)*.5;c=0x4aa8ff}
-  else if(mode==='turnos'&&turn){i=1;c=turn==='fiscal'?0x4a7bff:turn==='acusado'?0xff7a3a:0xb98cff}
   mood.color.set(c);mood.intensity+=(i-mood.intensity)*.12;
   /* público */
   const ex=now<crowdUntil;
@@ -1332,8 +1339,8 @@ function loop(){
   cam.position.copy(cp);
   if(ov&&camOv.shake){const a=camOv.shake*Math.max(0,1-(now-camOv.t0)/1200);cam.position.x+=(Math.random()-.5)*a;cam.position.y+=(Math.random()-.5)*a}
   cam.lookAt(cl);
-  hemi.intensity+=((hold?.32:.75)-hemi.intensity)*.06;
-  judgeSpot.intensity+=((hold?.4:1.6)-judgeSpot.intensity)*.06;
+  hemi.intensity+=((hold?.1:.75)-hemi.intensity)*.06;sun.intensity+=((hold?.15:.9)-sun.intensity)*.06;moon.intensity+=((hold?.08:.55)-moon.intensity)*.06;rim.intensity+=((hold?.05:.35)-rim.intensity)*.06;
+  judgeSpot.intensity+=((hold?.06:1.6)-judgeSpot.intensity)*.06;
   sealGlow.material.opacity=.3+Math.sin(t*1.2)*.08;extraTick(t,now);
 
   sampleLevels();
@@ -1359,7 +1366,7 @@ function loop(){
 
   for(const id in A){
     const a=A[id];
-    a.sl.intensity+=((mode==='turnos'&&turn&&!over&&TEAMS[turn].includes(id)?3.2:0)-a.sl.intensity)*.12;
+    a.sl.intensity+=((mode==='turnos'&&turn&&!over&&TEAMS[turn].includes(id)?7:0)-a.sl.intensity)*.12;
     a.sks.forEach((s,i)=>{
       const u=s.userData,fake=(talk[id]>now&&i===0)?.5+.5*Math.abs(Math.sin(t*14)):0;
       const lv=Math.max(u.alv,fake);u.lv+=(lv-u.lv)*.5;
