@@ -616,7 +616,7 @@ function explode(pos,sock,role){
   if(A[role]){const h=A[role].head;focus([h.x+(h.x>0?-.8:.8),h.y,h.z+4],[h.x,h.y-.2,h.z],1800,.5)}
 }
 
-const HIMNO_URL='https://cdn.discordapp.com/attachments/1282641610206613505/1478799442135224360/0304_1.mp4?ex=6af5f0cd&is=6af49f4d&hm=5b5224d92075e4addbc33e76a051cfbb156fafa85cc75d0579879ec29b81fd64&';
+const HIMNO_URL='https://cdn.discordapp.com/attachments/1282641610206613505/1478799442135224360/0304_1.mp4;
 const anthem=document.createElement('video');anthem.crossOrigin='anonymous';anthem.src=HIMNO_URL;anthem.preload='auto';anthem.volume=.7;anthem.playsInline=true;anthem.style.maxHeight='42vh';
 let phase='espera',saluteAt=0;
 const starTex=ctex(128,128,g=>{g.font='100px serif';g.fillStyle='#ffd23f';g.textAlign='center';g.fillText('★',64,100)},null);
